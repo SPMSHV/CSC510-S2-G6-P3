@@ -1,4 +1,5 @@
 import express from "express";
+import mongoose from "mongoose";
 import Order from "../models/Order.js";
 import MenuItem from "../models/MenuItem.js";
 import Restaurant from "../models/Restaurant.js";
@@ -15,6 +16,11 @@ router.get("/restaurant/:restaurantId", async (req, res) => {
     const { restaurantId } = req.params;
     const { startDate, endDate } = req.query;
 
+    // Convert restaurantId to ObjectId if needed
+    const restaurantObjectId = mongoose.Types.ObjectId.isValid(restaurantId) 
+      ? new mongoose.Types.ObjectId(restaurantId) 
+      : restaurantId;
+
     // Date filter
     const dateFilter = {};
     if (startDate || endDate) {
@@ -25,15 +31,16 @@ router.get("/restaurant/:restaurantId", async (req, res) => {
 
     // Total orders
     const totalOrders = await Order.countDocuments({
-      restaurantId,
+      restaurantId: restaurantObjectId,
       ...dateFilter
     });
 
     // Total revenue
+      
     const revenueResult = await Order.aggregate([
       {
         $match: {
-          restaurantId: restaurantId,
+          restaurantId: restaurantObjectId,
           paymentStatus: 'paid',
           ...dateFilter
         }
@@ -53,7 +60,7 @@ router.get("/restaurant/:restaurantId", async (req, res) => {
     // Orders by status
     const ordersByStatus = await Order.aggregate([
       {
-        $match: { restaurantId, ...dateFilter }
+        $match: { restaurantId: restaurantObjectId, ...dateFilter }
       },
       {
         $group: {
@@ -66,7 +73,7 @@ router.get("/restaurant/:restaurantId", async (req, res) => {
     // Popular menu items
     const popularItems = await Order.aggregate([
       {
-        $match: { restaurantId, ...dateFilter }
+        $match: { restaurantId: restaurantObjectId, ...dateFilter }
       },
       { $unwind: "$items" },
       {
@@ -84,7 +91,7 @@ router.get("/restaurant/:restaurantId", async (req, res) => {
     // Average rating
     const ratingResult = await OrderRating.aggregate([
       {
-        $match: { restaurantId }
+        $match: { restaurantId: restaurantObjectId }
       },
       {
         $group: {
@@ -96,7 +103,7 @@ router.get("/restaurant/:restaurantId", async (req, res) => {
     ]);
 
     res.json({
-      restaurantId,
+      restaurantId: restaurantId.toString(),
       period: { startDate, endDate },
       summary: {
         totalOrders,
