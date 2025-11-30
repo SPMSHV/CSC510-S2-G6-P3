@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Judge0 Online IDE</title>
+<style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f0f2f5; }
+    textarea { width: 100%; height: 200px; margin-bottom: 10px; font-family: monospace; font-size: 14px; }
+    select, button { padding: 8px; margin-right: 10px; font-size: 14px; }
+    pre { background: #1e1e1e; color: #fff; padding: 10px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+<h2>Judge0 Online IDE</h2>
+
+<textarea id="code" placeholder="Write your code here..."></textarea><br>
+
+<select id="language">
+    <option value="52">Python 3</option>
+    <option value="62">Java</option>
+    <option value="50">C</option>
+    <option value="54">C++</option>
+    <option value="63">C#</option>
+    <option value="71">JavaScript</option>
+</select>
+
+<button onclick="runCode()">Run Code</button>
+
+<h3>Output / Errors:</h3>
+<pre id="output">Waiting for code submission...</pre>
+
+<script>
+async function runCode() {
+    const code = document.getElementById('code').value;
+    const language_id = parseInt(document.getElementById('language').value);
+    const outputDiv = document.getElementById('output');
+    outputDiv.innerText = "Running...";
+
+    try {
+        const response = await fetch('http://104.236.56.159:2358/submissions?base64_encoded=false&wait=true', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ source_code: code, language_id })
+        });
+
+        const data = await response.json();
+
+        if (data.status.description !== "Accepted") {
+            outputDiv.innerText = 
+                data.compile_output || 
+                data.stderr || 
+                `Status: ${data.status.description}`;
+        } else {
+            outputDiv.innerText = data.stdout || "No output";
+        }
+    } catch (err) {
+        outputDiv.innerText = "Error connecting to server: " + err;
+    }
+}
+</script>
+</body>
+</html>
+

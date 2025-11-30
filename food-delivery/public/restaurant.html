@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Restaurant Menu</title>
+
+  <!-- Bootstrap + Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet"/>
+
+  <style>
+    :root{ --muted:#6a6f73 }
+    /* Background image + overlay */
+    html,body{height:100%}
+    body{
+      background:
+        linear-gradient(to bottom, rgba(0,0,0,.15), rgba(0,0,0,.15)),
+        url('https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?q=80&w=2400&auto=format&fit=crop');
+      background-size:cover;
+      background-position:center;
+      background-attachment:fixed;
+    }
+
+    /* Navbar (matches index.html) */
+    .brand-logo{ height:80px; width:auto; display:inline-block; vertical-align:middle; }
+    .badge-cart{ position:absolute; top:-6px; right:-6px; background:#dc3545; }
+    .navbar{ background:#ffffffcc !important; backdrop-filter: blur(8px); border-bottom:1px solid rgba(0,0,0,.06); }
+
+    /* Header card (kept style) */
+    .head-card{ border:1px solid #eaeaea; border-radius:16px; overflow:hidden; background:#fff; box-shadow:0 16px 32px rgba(0,0,0,.08); }
+    .head-img{ width:100%; height:100%; object-fit:cover; min-height:220px; }
+
+    /* Menu cards */
+    .menu-card{ height:100%; border:1px solid #eaeaea; border-radius:16px; overflow:hidden; background:#fff; box-shadow:0 12px 24px rgba(0,0,0,.06); }
+    .menu-img{ width:100%; height:140px; object-fit:cover; }
+    .menu-title{ font-weight:600; }
+    .money{ font-variant-numeric: tabular-nums; }
+    .out-flag{ position:absolute; top:10px; left:10px; background:#ffe3e3; color:#c92a2a; font-weight:600; border-radius:8px; padding:4px 8px; font-size:12px; }
+    .in-flag{ position:absolute; top:10px; left:10px; background:#e6ffe9; color:#2b8a3e; font-weight:600; border-radius:8px; padding:4px 8px; font-size:12px; }
+
+    /* keep room for actions row */
+    .menu-card .content{ display:flex; flex-direction:column; min-height:170px; }
+    .menu-card .actions{ margin-top:auto; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+
+    /* Qty control */
+    .qty{ display:flex; align-items:center; gap:8px; }
+    .qty .btn{ width:32px; height:32px; padding:0; display:inline-flex; align-items:center; justify-content:center; }
+    .qty input{ width:56px; text-align:center; }
+
+    /* Footer */
+    footer{ position:relative; z-index:2; background:#ffffffcc; backdrop-filter: blur(6px); }
+    footer .link-muted{ color:var(--muted); text-decoration:none }
+    footer .link-muted:hover{ text-decoration:underline; color:#0e0e0e }
+    footer .brand-logo{ height:50px; }
+  </style>
+</head>
+<body>
+
+  <!-- NAVBAR (same look as index.html) -->
+  <nav class="navbar sticky-top">
+    <div class="container py-2">
+      <a class="navbar-brand d-inline-flex align-items-center gap-2" href="/index.html">
+        <img src="/assets/BiteCodeNOBG.png" alt="BiteCode logo" class="brand-logo">
+      </a>
+      <div class="d-flex align-items-center gap-2 ms-auto">
+        <a class="btn btn-outline-secondary rounded-pill" href="/orders.html">My Orders</a>
+        <a class="position-relative btn btn-outline-primary rounded-pill" href="/cart.html" id="cartLink">
+          <span class="me-1">Cart</span>
+          <span class="position-absolute translate-middle badge rounded-pill badge-cart" id="cartCount" style="display:none;">0</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container py-4">
+    <div id="header" class="mb-4"></div>
+    <div id="menu" class="row g-3"></div>
+  </main>
+
+  <!-- FOOTER (unchanged) -->
+  <footer class="border-top">
+    <div class="container py-5">
+      <div class="row gy-4">
+        <div class="col-12 col-md-4 text-center text-md-start">
+          <a class="navbar-brand d-inline-flex align-items-center gap-2" href="/index.html">
+            <img src="/assets/BiteCodeNOBG.png" alt="BiteCode logo" class="brand-logo">
+          </a>
+          <p class="small text-muted mb-0">© <span id="yearFooter"></span> BiteCode — Because coding’s better with curry 🥘
+        </div>
+        <div class="col-12 col-md-4 text-center">
+          <h6 class="fw-bold text-uppercase text-muted mb-3">Dashboards</h6>
+          <ul class="list-unstyled small mb-0">
+            <li class="mb-2"><a class="link-muted" href="/customer-login.html">Customer Login</a></li>
+            <li class="mb-2"><a class="link-muted" href="/driver-login.html">Driver Login</a></li>
+            <li class="mb-2"><a class="link-muted" href="/restaurant-login.html">Restaurant Login</a></li>
+          </ul>
+        </div>
+        <div class="col-12 col-md-4 text-center text-md-end">
+          <h6 class="fw-bold text-uppercase text-muted mb-3">Get Started</h6>
+          <ul class="list-unstyled small mb-4">
+            <li class="mb-2"><a class="link-muted" href="/customer-register.html">New here? Join as a Customer</a></li>
+            <li class="mb-2"><a class="link-muted" href="/register-driver.html">Want to drive? Partner with us</a></li>
+            <li class="mb-2"><a class="link-muted" href="/restaurant-register.html">Own a restaurant? Increase your reach 🍽️</a></li>
+          </ul>
+          <ul class="list-unstyled small mb-0 d-flex justify-content-center justify-content-md-end gap-3">
+            <li><a class="link-muted" href="https://www.instagram.com/bitecode" target="_blank" aria-label="Instagram" title="Instagram"><i class="bi bi-instagram fs-4"></i></a></li>
+            <li><a class="link-muted" href="https://x.com/bitecode" target="_blank" aria-label="Twitter/X" title="Twitter/X"><i class="bi bi-twitter-x fs-4"></i></a></li>
+            <li><a class="link-muted" href="https://facebook.com/bitecode" target="_blank" aria-label="Facebook" title="Facebook"><i class="bi bi-facebook fs-4"></i></a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    const API_BASE = (window.API_BASE || (location.origin + "/api"));
+    const url = new URL(window.location.href);
+    const restaurantId = url.searchParams.get('id');
+
+    const yearEl = document.getElementById('yearFooter'); if (yearEl) yearEl.textContent = new Date().getFullYear();
+    const cartCountEl = document.getElementById('cartCount');
+
+    const money = n => `$${(Number(n)||0).toFixed(2)}`;
+
+    async function updateCartCount(){
+      try{
+        const res = await fetch(`${API_BASE}/cart`, { credentials:'include' });
+        if (!res.ok) return;
+        let data = [];
+        try { data = await res.json(); } catch { data = []; }
+        const count = Array.isArray(data) ? data.length :
+                      Array.isArray(data?.items) ? data.items.length : 0;
+        if (cartCountEl){
+          if (count>0){ cartCountEl.textContent = count; cartCountEl.style.display='inline-block'; }
+          else { cartCountEl.style.display='none'; }
+        }
+      }catch{}
+    }
+
+    function renderOldHeader(r){
+      document.getElementById('header').innerHTML = `
+        <div class="head-card">
+          <div class="row g-0">
+            <div class="col-md-4">
+              <img class="head-img"
+                   src="${r.imageUrl || 'https://via.placeholder.com/600x400?text=Restaurant'}"
+                   alt="${r.name || 'Restaurant'}"
+                   onerror="this.src='https://via.placeholder.com/600x400?text=Restaurant'">
+            </div>
+            <div class="col-md-8">
+              <div class="card-body">
+                <h3 class="card-title mb-1">${r.name || 'Restaurant'}</h3>
+                <p class="card-text text-muted mb-2">${r.cuisine || ''}</p>
+                <p class="small text-secondary mb-0">
+                  ⭐ ${(typeof r.rating === 'number') ? r.rating.toFixed(1) : (r.rating ?? '—')}
+                  • ${r.etaMins ? r.etaMins + ' mins' : '—'}
+                  • ${r.deliveryFee!=null ? money(r.deliveryFee) : '—'} delivery
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>`;
+    }
+
+    function itemAvailabilityFlags(item){
+      const inStock = (typeof item.inStock === 'boolean') ? item.inStock :
+                      (typeof item.stock === 'number' ? item.stock > 0 : true);
+      return {
+        inStock,
+        flagHtml: inStock
+          ? '<span class="in-flag">In Stock</span>'
+          : '<span class="out-flag">Out of Stock</span>'
+      };
+    }
+
+    function cardHtml(item){
+      const { inStock, flagHtml } = itemAvailabilityFlags(item);
+      const safeImg = item.imageUrl || 'https://via.placeholder.com/800x600?text=Item';
+      const desc = item.description || '';
+      const price = money(item.price);
+      const id = String(item._id);
+      const btnDisabled = inStock ? '' : 'disabled';
+      const btnTitle = inStock ? 'Add to cart' : 'Out of stock';
+
+      return `
+      <div class="col-12 col-md-6 col-lg-4">
+        <div class="menu-card position-relative h-100">
+          ${flagHtml}
+          <img class="menu-img" src="${safeImg}" alt="${item.name||'Item'}" onerror="this.src='https://via.placeholder.com/800x600?text=Item'">
+          <div class="p-3 content">
+            <div class="d-flex justify-content-between align-items-start">
+              <div class="menu-title">${item.name || 'Item'}</div>
+              <div class="fw-bold money">${price}</div>
+            </div>
+            <div class="text-secondary small mt-1">${desc}</div>
+
+            <div class="actions">
+              <div class="qty">
+                <button class="btn btn-outline-secondary btn-sm" data-dec="${id}" ${btnDisabled} title="Decrease"><i class="bi bi-dash"></i></button>
+                <input class="form-control form-control-sm" data-qty="${id}" type="number" min="1" value="1" ${btnDisabled}>
+                <button class="btn btn-outline-secondary btn-sm" data-inc="${id}" ${btnDisabled} title="Increase"><i class="bi bi-plus"></i></button>
+              </div>
+              <button class="btn btn-primary btn-sm" data-add="${id}" ${btnDisabled} title="${btnTitle}">
+                <i class="bi bi-bag-plus me-1"></i> Add
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    function wireQtyHandlers(container, menu){
+      container.querySelectorAll('[data-inc]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const id = btn.getAttribute('data-inc');
+          const input = container.querySelector(`[data-qty="${id}"]`);
+          input.value = Math.max(1, Number(input.value||1)+1);
+        });
+      });
+      container.querySelectorAll('[data-dec]').forEach(btn=>{
+        btn.addEventListener('click', ()=>{
+          const id = btn.getAttribute('data-dec');
+          const input = container.querySelector(`[data-qty="${id}"]`);
+          input.value = Math.max(1, Number(input.value||1)-1);
+        });
+      });
+      container.querySelectorAll('[data-add]').forEach(btn=>{
+        btn.addEventListener('click', async ()=>{
+          const id = btn.getAttribute('data-add');
+          const input = container.querySelector(`[data-qty="${id}"]`);
+          const qty = Math.max(1, Number(input?.value || 1));
+          const item = menu.find(m => String(m._id) === id);
+          if (!item) return;
+          await addToCart(id, String(item.restaurantId || restaurantId), qty);
+        });
+      });
+    }
+
+    function filterMenu(menu, term){
+      term = (term||'').trim().toLowerCase();
+      if (!term) return menu;
+      return menu.filter(i =>
+        String(i.name||'').toLowerCase().includes(term) ||
+        String(i.description||'').toLowerCase().includes(term)
+      );
+    }
+
+    async function renderMenu(){
+      const grid = document.getElementById('menu');
+      grid.innerHTML = `
+        <div class="col-12">
+          <div class="menu-card p-4"><span class="text-secondary">Loading menu…</span></div>
+        </div>`;
+      const mRes = await fetch(`${API_BASE}/menu?restaurantId=${encodeURIComponent(restaurantId)}`, { credentials:'include' });
+      let menu = [];
+      try { menu = await mRes.json(); } catch { menu = []; }
+
+      const sb = document.getElementById('searchBox'); // optional
+      const term = sb ? (sb.value || '') : '';
+      const filtered = filterMenu(Array.isArray(menu) ? menu : [], term);
+
+      if (!filtered.length){
+        grid.innerHTML = `
+          <div class="col-12">
+            <div class="menu-card p-4 d-flex justify-content-between align-items-center">
+              <div>
+                <div class="h5 mb-1">No items found</div>
+                <div class="text-secondary">Try a different search.</div>
+              </div>
+              <a class="btn btn-outline-secondary btn-sm" href="/index.html">Back to restaurants</a>
+            </div>
+          </div>`;
+        return;
+      }
+
+      grid.innerHTML = filtered.map(cardHtml).join('');
+      wireQtyHandlers(grid, filtered);
+    }
+
+    async function addToCart(menuItemId, restaurantId, quantity){
+      try{
+        const res = await fetch(`${API_BASE}/cart`, {
+          method:'POST',
+          headers:{ 'Content-Type':'application/json' },
+          credentials:'include',
+          body: JSON.stringify({ menuItemId, restaurantId, quantity })
+        });
+        if (res.status === 401){
+          window.location.href = '/customer-login.html';
+          return;
+        }
+        let data = {};
+        try { data = await res.json(); } catch {}
+        const alert = document.createElement('div');
+        if (res.ok){
+          alert.className = 'position-fixed top-0 start-50 translate-middle-x mt-3 alert alert-success py-2 px-3 shadow';
+          alert.textContent = 'Added to cart';
+          updateCartCount();
+        } else {
+          alert.className = 'position-fixed top-0 start-50 translate-middle-x mt-3 alert alert-danger py-2 px-3 shadow';
+          alert.textContent = `Error: ${data.error || 'Unable to add'}`;
+        }
+        document.body.appendChild(alert);
+        setTimeout(()=> alert.remove(), 1600);
+      }catch{
+        const alert = document.createElement('div');
+        alert.className = 'position-fixed top-0 start-50 translate-middle-x mt-3 alert alert-danger py-2 px-3 shadow';
+        alert.textContent = 'Error adding to cart';
+        document.body.appendChild(alert);
+        setTimeout(()=> alert.remove(), 1600);
+      }
+    }
+
+    async function loadPage(){
+      if (!restaurantId){
+        document.getElementById('header').innerHTML = '<div class="alert alert-danger">Missing restaurant id.</div>';
+        return;
+      }
+      const rRes = await fetch(`${API_BASE}/restaurants/${encodeURIComponent(restaurantId)}`, { credentials:'include' });
+      if (!rRes.ok){
+        document.getElementById('header').innerHTML = '<div class="alert alert-danger">Restaurant not found.</div>';
+        return;
+      }
+      const r = await rRes.json();
+      renderOldHeader(r);
+      await renderMenu();
+      updateCartCount();
+
+      const sb = document.getElementById('searchBox');
+      if (sb) sb.addEventListener('input', renderMenu);
+    }
+
+    loadPage();
+  </script>
+</body>
+</html>

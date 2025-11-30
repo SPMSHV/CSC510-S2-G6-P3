@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>About Us • bitecode</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --accent: #16a34a;
+      --text: #0e0e0e;
+      --muted: #6a6f73;
+      --bg: #f9fafb;
+      --radius: 16px;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .navbar {
+      background: #fff !important;
+      border-bottom: 1px solid rgba(0, 0, 0, .06);
+    }
+
+    .brand {
+      font-weight: 800;
+      letter-spacing: .2px;
+      color: var(--text);
+      text-decoration: none;
+    }
+
+    .brand .accent {
+      color: var(--accent);
+    }
+
+    /* Hero section */
+    .hero {
+      width: 100%;
+      background: url('YOUR_HERO_IMAGE_URL_HERE') center/cover no-repeat;
+      color: white;
+      text-align: center;
+      padding: 120px 20px;
+      position: relative;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, .45);
+    }
+
+    .hero>* {
+      position: relative;
+      z-index: 2;
+    }
+
+    .hero h1 {
+      font-size: 2.75rem;
+      font-weight: 800;
+    }
+
+    .hero p {
+      font-size: 1.15rem;
+      margin-top: 1rem;
+      color: rgba(255, 255, 255, .85);
+      max-width: 600px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    main {
+      flex: 1;
+    }
+
+    .how-it-works {
+      padding: 60px 0;
+      background: #fff;
+    }
+
+    .how-it-works .step-img {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      border-radius: var(--radius);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, .08);
+    }
+
+    .how-it-works h2 {
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+    }
+
+    .how-it-works .step-title {
+      margin-top: 1rem;
+      font-weight: 600;
+    }
+
+    .how-it-works .step-text {
+      color: var(--muted);
+      margin-top: .5rem;
+    }
+
+    footer {
+      margin-top: auto;
+      border-top: 1px solid rgba(0, 0, 0, .08);
+      background: #fff;
+      color: var(--muted);
+      font-size: 0.9rem;
+      padding: 20px 0;
+      text-align: center;
+    }
+
+    .hero-section {
+      background: linear-gradient(180deg, #ffffff, #f9fafb);
+    }
+
+    .hero-img {
+      max-width: 100%;
+      height: auto;
+      border-radius: 20px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .accent {
+      color: #16a34a;
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="navbar sticky-top">
+    <div class="container py-2">
+      <a class="navbar-brand d-inline-flex align-items-center" href="/index.html">
+        <img src="/assets/BiteCodeNOBG.png" alt="BiteCode logo" style="height: 50px; width: auto;" />
+      </a>
+      <div class="ms-auto">
+        <a class="btn btn-outline-dark rounded-pill" href="/index.html">Home</a>
+      </div>
+    </div>
+  </nav>
+
+  <section class="hero-section py-5">
+    <div class="container">
+      <div class="row align-items-center">
+
+        <!-- Left: Text -->
+        <div class="col-lg-6 text-center text-lg-start mb-4 mb-lg-0">
+          <h1 class="fw-bold display-5">
+            Make every delivery smarter with <span class="accent">bitecode</span>
+          </h1>
+          <p class="lead text-muted mt-3">
+            While you wait for your order — solve fun coding challenges & earn discounts on your next meal.
+          </p>
+          <a href="/customer-register.html" class="btn btn-success btn-lg rounded-pill mt-3">Get Started</a>
+        </div>
+
+        <!-- Right: Image -->
+        <div class="col-lg-6 text-center">
+          <img src="\assets\About_us.png" alt="Coding and food illustration" class="hero-img img-fluid">
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+  <main class="container">
+    <!-- How it works section -->
+    <section class="how-it-works text-center">
+      <h2>How it Works</h2>
+      <div class="row g-4 mt-4">
+        <div class="col-md-4">
+          <img class="step-img" src="\assets\About_us_order_meal.avif" alt="Order your meal">
+          <div class="step-title">1. Order Your Meal</div>
+          <div class="step-text">Pick your favorite dishes from local restaurants and place your order.</div>
+        </div>
+        <div class="col-md-4">
+          <img class="step-img" src="\assets\About_us_solve_a_challenge.avif" alt="Solve a challenge">
+          <div class="step-title">2. Solve a Challenge</div>
+          <div class="step-text">Complete a coding problem while your food is being delivered to unlock rewards.</div>
+        </div>
+        <div class="col-md-4">
+          <img class="step-img" src="\assets\About_us_earn_rewards.avif" alt="Earn rewards">
+          <div class="step-title">3. Earn & Save</div>
+          <div class="step-text">Use your earned discount code on your next order — it’s that easy!</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Additional content (team, story) could go here -->
+  </main>
+
+  <footer>
+    © <span id="yearFooter"></span> BiteCode - Because coding’s better with curry 🥘
+  </footer>
+
+  <script>
+    document.getElementById('yearFooter').textContent = new Date().getFullYear();
+  </script>
+</body>
+
+</html>

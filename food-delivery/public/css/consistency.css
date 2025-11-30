@@ -1,0 +1,122 @@
+/* 🎨 UI/UX Consistency Styles */
+
+/* Standardized Button Styles */
+.btn-primary {
+  background-color: #16a34a;
+  border-color: #16a34a;
+  transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: #15803d;
+  border-color: #15803d;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(22, 163, 74, 0.3);
+}
+
+.btn-secondary {
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  transform: translateY(-1px);
+}
+
+/* Loading States */
+.loading-spinner {
+  display: inline-block;
+  width: 20px;
+  height: 20px;
+  border: 3px solid rgba(22, 163, 74, 0.3);
+  border-radius: 50%;
+  border-top-color: #16a34a;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+/* Error Messages */
+.alert-error {
+  background-color: #fee;
+  border-color: #fcc;
+  color: #c33;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin: 12px 0;
+}
+
+/* Success Messages */
+.alert-success {
+  background-color: #efe;
+  border-color: #cfc;
+  color: #3c3;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin: 12px 0;
+}
+
+/* Smooth Transitions */
+.card, .btn, .badge {
+  transition: all 0.2s ease;
+}
+
+.card:hover {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Responsive Improvements */
+@media (max-width: 768px) {
+  .container {
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+  
+  .card {
+    margin-bottom: 16px;
+  }
+  
+  .btn {
+    width: 100%;
+    margin-bottom: 8px;
+  }
+  
+  .btn-group .btn {
+    width: auto;
+  }
+}
+
+/* Improved Form Inputs */
+.form-control:focus {
+  border-color: #16a34a;
+  box-shadow: 0 0 0 0.2rem rgba(22, 163, 74, 0.25);
+}
+
+/* Consistent Spacing */
+.mt-consistent {
+  margin-top: 16px;
+}
+
+.mb-consistent {
+  margin-bottom: 16px;
+}
+
+.p-consistent {
+  padding: 16px;
+}
+

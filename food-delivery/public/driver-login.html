@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Driver Login • bitecode</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root {
+      --card: #fff;
+      --text: #0e0e0e;
+      --muted: #6a6f73;
+      --accent: #16a34a;
+      --overlay: rgba(0, 0, 0, .35);
+      --radius: 18px;
+    }
+
+    html,
+    body {
+      height: 100%
+    }
+
+    body {
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background:
+        linear-gradient(to bottom, rgba(255, 255, 255, .0), rgba(255, 255, 255, .25)),
+        url('https://images.unsplash.com/photo-1504384308090-c894fdcc538d?q=80&w=2400&auto=format&fit=crop');
+      /* truck/road themed */
+      background-size: cover;
+      background-position: center;
+      margin: 0;
+      color: var(--text);
+      position: relative;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: var(--overlay);
+      z-index: 0
+    }
+
+    .navbar {
+      position: relative;
+      z-index: 3;
+      background: rgba(255, 255, 255, .9) !important;
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(0, 0, 0, .06)
+    }
+
+    .brand {
+      font-weight: 800;
+      letter-spacing: .2px;
+      color: #0e0e0e;
+      text-decoration: none
+    }
+
+    .brand .accent {
+      color: var(--accent)
+    }
+
+    .wrap {
+      min-height: calc(100% - 64px);
+      display: grid;
+      place-items: center;
+      padding: 40px 16px;
+      position: relative;
+      z-index: 2
+    }
+
+    .card {
+      width: 100%;
+      max-width: 560px;
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: 0 20px 60px rgba(0, 0, 0, .25);
+      border: 1px solid rgba(0, 0, 0, .06)
+    }
+
+    .form-control {
+      border-radius: 12px;
+      padding: .9rem .95rem;
+      border-color: #e6e7e9
+    }
+
+    .form-control:focus {
+      border-color: #cdd1d5;
+      box-shadow: 0 0 0 .2rem rgba(0, 0, 0, .04)
+    }
+
+    .btn-black {
+      background: #0e0e0e;
+      color: #fff;
+      border-radius: 999px;
+      padding: .9rem 1.25rem;
+      border: none
+    }
+
+    .btn-black:hover {
+      background: #1a1a1a;
+      color: #fff
+    }
+
+    .input-group .btn {
+      border-radius: 12px
+    }
+
+    .sub {
+      color: var(--muted)
+    }
+
+    .watermark {
+      position: fixed;
+      inset: 0;
+      display: none !important;
+      place-items: center;
+      z-index: 1;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .watermark span {
+      font-weight: 800;
+      font-size: clamp(48px, 12vw, 180px);
+      letter-spacing: .5px;
+      color: #fff;
+      opacity: .075;
+      transform: rotate(-18deg);
+      text-shadow: 0 2px 12px rgba(0, 0, 0, .35);
+      mix-blend-mode: lighten;
+    }
+
+    .watermark .accent {
+      color: var(--accent);
+      opacity: .16;
+    }
+
+    /* Footer */
+    footer {
+      position: relative;
+      z-index: 2;
+      background: #ffffff;
+    }
+
+    footer .link-muted {
+      color: var(--muted);
+      text-decoration: none;
+    }
+
+    footer .link-muted:hover {
+      text-decoration: underline;
+      color: #0e0e0e;
+    }
+
+    /* Logo sizing */
+    .brand-logo {
+      height: 100px;
+      width: auto;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    footer .brand-logo {
+      height: 50px;
+      /* slightly smaller in footer */
+    }
+  </style>
+</head>
+
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <a class="navbar-brand d-inline-flex align-items-center gap-2" href="/index.html">
+        <img src="/assets/BiteCodeNOBG.png" alt="BiteCode logo" class="brand-logo">
+      </a>
+      <div class="ms-auto">
+        <a class="btn btn-outline-dark rounded-pill" href="/register-driver.html">Create account</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="watermark">
+    <span>driver<span class="accent">portal</span></span>
+  </div>
+
+  <main class="wrap">
+    <div class="card p-4 p-lg-5">
+      <h1 class="h4 fw-bold mb-2">Driver Sign In</h1>
+      <p class="sub mb-4">Access your dashboard and start delivering orders.</p>
+
+      <div id="alert" class="alert d-none" role="alert"></div>
+
+      <form id="driverLoginForm" novalidate>
+        <div class="mb-3">
+          <label class="form-label">Email</label>
+          <input class="form-control" id="email" type="email" required placeholder="driver@example.com" />
+        </div>
+        <div class="mb-4">
+          <label class="form-label">Password</label>
+          <div class="input-group">
+            <input class="form-control" id="password" type="password" required placeholder="••••••••" />
+            <button class="btn btn-outline-secondary" type="button" id="togglePwd">View</button>
+          </div>
+        </div>
+        <button class="btn btn-black w-100" type="submit">Sign in</button>
+        <p class="mt-3 mb-0 sub">New here? <a href="/register-driver.html">Register now</a></p>
+      </form>
+    </div>
+  </main>
+
+  <script>
+    const API_BASE = (window.API_BASE || (location.origin + "/api"));
+    const alertBox = document.getElementById("alert");
+
+    function showAlert(type, msg) {
+      alertBox.className = `alert alert-${type}`;
+      alertBox.textContent = msg;
+      alertBox.classList.remove("d-none");
+    }
+
+    document.getElementById("togglePwd").addEventListener("click", () => {
+      const pwd = document.getElementById("password");
+      const btn = document.getElementById("togglePwd");
+      const showing = pwd.type === "text";
+      pwd.type = showing ? "password" : "text";
+      btn.textContent = showing ? "View" : "Hide";
+    });
+
+    document.getElementById("driverLoginForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      alertBox.classList.add("d-none");
+
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      if (!email || !password) {
+        showAlert("warning", "Please enter email and password.");
+        return;
+      }
+      if (!email.includes("@")) {
+        showAlert("warning", "Email must contain '@'.");
+        return;
+      }
+
+      try {
+        const res = await fetch(`${API_BASE}/driver/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ email, password })
+        });
+
+        let data = {};
+        try { data = await res.json(); } catch (_) { }
+
+        if (!res.ok) {
+          const msg = data?.error || data?.message || "Login failed. Please check credentials.";
+          showAlert("danger", msg);
+          return;
+        }
+
+        if (data?.message) {
+          const m = data.message.match(/Welcome\s+(.+)!/i);
+          if (m && m[1]) localStorage.setItem("driverName", m[1]);
+        }
+        location.href = "/driver-dashboard.html";
+      } catch (err) {
+        showAlert("danger", err.message || "Network error. Please try again.");
+      }
+    });
+  </script>
+  <footer class="border-top bg-white">
+    <div class="container py-5">
+      <div class="row gy-4">
+        <!-- Left brand block -->
+        <div class="col-12 col-md-4 text-center text-md-start">
+          <a class="navbar-brand d-inline-flex align-items-center gap-2" href="/index.html">
+            <img src="/assets/BiteCodeNOBG.png" alt="BiteCode logo" class="brand-logo">
+          </a>
+          <p class="small text-muted mb-1">
+            © <span id="yearFooter"></span> BiteCode - Because coding’s better with curry 🥘
+          </p>
+          <p class="small text-muted mb-0">
+            Any grievances? Email us at
+            <a href="mailto:bitecodearena@gmail.com" class="link-muted">bitecodearena@gmail.com</a>
+          </p>
+        </div>
+
+        <!-- Middle stacked dashboards -->
+        <div class="col-12 col-md-4 text-center">
+          <h6 class="fw-bold text-uppercase text-muted mb-3">Dashboards</h6>
+          <ul class="list-unstyled small mb-0">
+            <li class="mb-2">
+              <a class="link-muted" href="/customer-login.html">Customer Login</a>
+            </li>
+            <li class="mb-2">
+              <a class="link-muted" href="/driver-login.html">Driver Login</a>
+            </li>
+            <li class="mb-2">
+              <a class="link-muted" href="/restaurant-login.html">Restaurant Login</a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Right playful links + socials -->
+        <div class="col-12 col-md-4 text-center text-md-end">
+          <h6 class="fw-bold text-uppercase text-muted mb-3">Get Started</h6>
+          <ul class="list-unstyled small mb-4">
+            <li class="mb-2">
+              <a class="link-muted" href="/customer-register.html">New here? Join as a Customer</a>
+            </li>
+            <li class="mb-2">
+              <a class="link-muted" href="/register-driver.html">Want to drive? Partner with us</a>
+            </li>
+            <li class="mb-2">
+              <a class="link-muted" href="/restaurant-register.html">Own a restaurant? Increase your reach 🍽️</a>
+            </li>
+            <li class="mb-2">
+              <a class="link-muted" href="/about-us.html">About Us</a>
+            </li>
+          </ul>
+
+          <ul class="list-unstyled small mb-0 d-flex justify-content-center justify-content-md-end gap-3">
+            <li>
+              <a class="link-muted" href="https://www.instagram.com/bitecodese2025/" target="_blank" aria-label="Instagram"
+                title="Instagram">
+                <i class="bi bi-instagram fs-4"></i>
+              </a>
+            </li>
+            <!-- <li>
+              <a class="link-muted" href="https://x.com/bitecode" target="_blank" aria-label="Twitter/X"
+                title="Twitter/X">
+                <i class="bi bi-twitter-x fs-4"></i>
+              </a>
+            </li> -->
+            <li>
+              <a class="link-muted" href="https://www.facebook.com/profile.php?id=61583523866090" target="_blank" aria-label="Facebook"
+                title="Facebook">
+                <i class="bi bi-facebook fs-4"></i>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </footer>
+</body>
+
+</html>

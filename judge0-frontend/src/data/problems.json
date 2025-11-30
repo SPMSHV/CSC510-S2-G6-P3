@@ -1,0 +1,333 @@
+[
+  {
+    "id": 1,
+    "title": "Sum of Two Numbers",
+    "description": "Write a program that reads two integers and prints their sum.",
+    "explanation": "Read two integers and print their sum. This problem reinforces basic input handling and arithmetic operations.",
+    "sample_input": "1 2\n",
+    "sample_output": "3\n",
+    "constraints": "−10^9 ≤ a, b ≤ 10^9",
+    "difficulty": "easy",
+    "templates": {
+      "python": "# Read two integers and print their sum\na, b = map(int, input().split())\n# TODO: print their sum\n",
+      "cpp": "#include <iostream>\nusing namespace std;\nint main(){\n    int a, b;\n    cin >> a >> b;\n    // TODO: print their sum here\n    return 0;\n}\n",
+      "java": "import java.util.*;\nclass Main {\n  public static void main(String[] args) {\n    Scanner sc = new Scanner(System.in);\n    int a = sc.nextInt();\n    int b = sc.nextInt();\n    // TODO: print the sum\n  }\n}\n",
+      "javascript": "const fs = require('fs');\nconst [a, b] = fs.readFileSync(0, 'utf8').trim().split(/\\s+/).map(Number);\n// TODO: print their sum\n"
+    },
+    "testcases": [
+      { "id": "T1", "unlocked": true, "input": "1 2\n", "expected": "3\n" },
+      { "id": "T2", "unlocked": true, "input": "100 -40\n", "expected": "60\n" },
+      { "id": "H1", "unlocked": false, "input": "0 0\n", "expected": "0\n" },
+      { "id": "H2", "unlocked": false, "input": "-5 -7\n", "expected": "-12\n" },
+      { "id": "H3", "unlocked": false, "input": "999999999 1\n", "expected": "1000000000\n" }
+    ]
+  },
+  {
+    "id": 2,
+    "title": "Find Maximum",
+    "description": "Read N integers and print the maximum value among them.",
+    "explanation": "Read an integer N followed by N integers, and output the largest value. This tests your understanding of arrays and iteration.",
+    "sample_input": "5\n1 3 2 9 4\n",
+    "sample_output": "9\n",
+    "constraints": "1 ≤ N ≤ 10^5, −10^9 ≤ arr[i] ≤ 10^9",
+    "difficulty": "medium",
+    "templates": {
+      "python": "# Read N and numbers, then print maximum\nn = int(input())\nnums = list(map(int, input().split()))\n# TODO: find and print maximum\n",
+      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\nint main(){\n    int n;\n    cin >> n;\n    vector<int> arr(n);\n    for(int i=0;i<n;i++) cin >> arr[i];\n    // TODO: Find and print maximum value\n    return 0;\n}\n",
+      "java": "import java.util.*;\nclass Main {\n  public static void main(String[] args) {\n    Scanner sc = new Scanner(System.in);\n    int n = sc.nextInt();\n    int[] arr = new int[n];\n    for(int i=0;i<n;i++) arr[i] = sc.nextInt();\n    // TODO: find and print maximum\n  }\n}\n",
+      "javascript": "const fs = require('fs');\nconst data = fs.readFileSync(0,'utf8').trim().split(/\\s+/).map(Number);\nconst n = data[0];\nconst arr = data.slice(1);\n// TODO: find and print maximum\n"
+    },
+    "testcases": [
+      { "id": "T1", "unlocked": true, "input": "5\n1 3 2 9 4\n", "expected": "9\n" },
+      { "id": "T2", "unlocked": true, "input": "3\n-5 -2 -100\n", "expected": "-2\n" },
+      { "id": "H1", "unlocked": false, "input": "6\n7 7 7 7 7 7\n", "expected": "7\n" },
+      { "id": "H2", "unlocked": false, "input": "8\n-10 20 5 20 3 2 1 0\n", "expected": "20\n" }
+    ]
+  },
+  {
+    "id": 3,
+    "title": "Factorial",
+    "description": "Write a program to compute factorial of a number N.",
+    "explanation": "Given an integer N, print N! (N factorial). The factorial of N is the product of all positive integers up to N.",
+    "sample_input": "5\n",
+    "sample_output": "120\n",
+    "constraints": "0 ≤ N ≤ 20",
+    "difficulty": "medium",
+    "templates": {
+      "python": "# Read N and compute factorial\nn = int(input().strip())\n# TODO: compute factorial and print\n",
+      "cpp": "#include <iostream>\nusing namespace std;\nint main(){\n    int n; cin >> n;\n    // TODO: compute factorial and print\n    return 0;\n}\n",
+      "java": "import java.util.*;\nclass Main {\n  public static void main(String[] args) {\n    Scanner sc = new Scanner(System.in);\n    int n = sc.nextInt();\n    // TODO: compute factorial and print\n  }\n}\n",
+      "javascript": "const fs = require('fs');\nconst n = parseInt(fs.readFileSync(0,'utf8').trim());\n// TODO: compute factorial and print\n"
+    },
+    "testcases": [
+      { "id": "T1", "unlocked": true, "input": "5\n", "expected": "120\n" },
+      { "id": "T2", "unlocked": true, "input": "1\n", "expected": "1\n" },
+      { "id": "H1", "unlocked": false, "input": "10\n", "expected": "3628800\n" },
+      { "id": "H2", "unlocked": false, "input": "7\n", "expected": "5040\n" }
+    ]
+  },
+  {
+    "id": 4,
+    "title": "Even or Odd",
+    "description": "Read an integer and print 'EVEN' or 'ODD'.",
+    "explanation": "This problem tests conditional logic. You must determine whether a given integer is even or odd.",
+    "sample_input": "4\n",
+    "sample_output": "EVEN\n",
+    "constraints": "−10^9 ≤ n ≤ 10^9",
+    "difficulty": "easy",
+    "templates": {
+      "python": "x = int(input().strip())\n# TODO: check if even or odd\n",
+      "cpp": "#include <iostream>\nusing namespace std;\nint main(){\n    int x; cin >> x;\n    // TODO: check even or odd\n    return 0;\n}\n",
+      "java": "import java.util.*;\nclass Main{\n  public static void main(String[] args){\n    Scanner sc = new Scanner(System.in);\n    int x = sc.nextInt();\n    // TODO: check even or odd\n  }\n}\n",
+      "javascript": "const fs = require('fs');\nconst x = parseInt(fs.readFileSync(0,'utf8').trim());\n// TODO: check even or odd\n"
+    },
+    "testcases": [
+      { "id": "T1", "unlocked": true, "input": "4\n", "expected": "EVEN\n" },
+      { "id": "T2", "unlocked": true, "input": "7\n", "expected": "ODD\n" },
+      { "id": "H1", "unlocked": false, "input": "-3\n", "expected": "ODD\n" },
+      { "id": "H2", "unlocked": false, "input": "1000000\n", "expected": "EVEN\n" }
+    ]
+  },
+  {
+    "id": 5,
+    "title": "Hello, Name!",
+    "description": "Read a name and print 'Hello, <name>!'.",
+    "explanation": "This problem introduces string handling and formatted output. Simply read a string and include it in a greeting message.",
+    "sample_input": "Alice\n",
+    "sample_output": "Hello, Alice!\n",
+    "constraints": "1 ≤ |name| ≤ 100",
+    "difficulty": "easy",
+    "templates": {
+      "python": "name = input().strip()\nprint(f'Hello, {name}!')\n",
+      "cpp": "#include <iostream>\n#include <string>\nusing namespace std;\nint main(){\n    string name; getline(cin, name);\n    // TODO: print greeting message\n    return 0;\n}\n",
+      "java": "import java.util.*;\nclass Main{\n  public static void main(String[] args){\n    Scanner sc = new Scanner(System.in);\n    String name = sc.nextLine();\n    // TODO: print greeting message\n  }\n}\n",
+      "javascript": "const fs = require('fs');\nconst name = fs.readFileSync(0,'utf8').trim();\nconsole.log(`Hello, ${name}!`);\n"
+    },
+    "testcases": [
+      { "id": "T1", "unlocked": true, "input": "Alice\n", "expected": "Hello, Alice!\n" },
+      { "id": "T2", "unlocked": true, "input": "John Doe\n", "expected": "Hello, John Doe!\n" },
+      { "id": "H1", "unlocked": false, "input": "Bob\n", "expected": "Hello, Bob!\n" },
+      { "id": "H2", "unlocked": false, "input": "mary_jane42\n", "expected": "Hello, mary_jane42!\n" }
+    ]
+  },
+  {
+    "id": 6,
+    "title": "Count Vowels",
+    "description": "Given a string, count and print the number of vowels.",
+    "explanation": "This problem tests your ability to iterate through a string and identify specific characters. Count both uppercase and lowercase vowels and print the total number found.",
+    "sample_input": "hello\n",
+    "sample_output": "2\n",
+    "constraints": "1 ≤ |s| ≤ 10^5, s contains printable ASCII characters only",
+    "difficulty": "easy",
+    "templates": {
+      "python": "s = input().strip()\n# TODO: count vowels and print result\n",
+      "cpp": "#include <iostream>\n#include <string>\nusing namespace std;\nint main(){\n    string s; cin >> s;\n    // TODO: count vowels\n    return 0;\n}\n",
+      "java": "import java.util.*;\nclass Main{\n  public static void main(String[] args){\n    Scanner sc = new Scanner(System.in);\n    String s = sc.next();\n    // TODO: count vowels\n  }\n}\n",
+      "javascript": "const fs = require('fs');\nconst s = fs.readFileSync(0,'utf8').trim();\n// TODO: count vowels\n"
+    },
+    "testcases": [
+      { "id": "T1", "unlocked": true, "input": "hello\n", "expected": "2\n" },
+      { "id": "T2", "unlocked": true, "input": "AEIOUxyz\n", "expected": "5\n" },
+      { "id": "H1", "unlocked": false, "input": "queue\n", "expected": "4\n" },
+      { "id": "H2", "unlocked": false, "input": "rhythm\n", "expected": "0\n" }
+    ]
+  },
+  {
+    "id": 7,
+    "title": "Reverse Words",
+    "description": "Reverse the order of words in a given line.",
+    "explanation": "This problem checks your understanding of string manipulation and array operations. You must split a line into words, reverse the order, and print them joined by spaces.",
+    "sample_input": "hello world\n",
+    "sample_output": "world hello\n",
+    "constraints": "1 ≤ |line| ≤ 10^4, line contains printable ASCII characters",
+    "difficulty": "medium",
+    "templates": {
+      "python": "line = input().strip()\n# TODO: reverse words and print result\n",
+      "cpp": "#include <iostream>\n#include <string>\nusing namespace std;\nint main(){\n    string line; getline(cin, line);\n    // TODO: reverse words\n    return 0;\n}\n",
+      "java": "import java.util.*;\nclass Main{\n  public static void main(String[] args){\n    Scanner sc = new Scanner(System.in);\n    String line = sc.nextLine();\n    // TODO: reverse words\n  }\n}\n",
+      "javascript": "const fs = require('fs');\nconst line = fs.readFileSync(0,'utf8').trim();\n// TODO: reverse words\n"
+    },
+    "testcases": [
+      { "id": "T1", "unlocked": true, "input": "hello world\n", "expected": "world hello\n" },
+      { "id": "T2", "unlocked": true, "input": "coding is fun\n", "expected": "fun is coding\n" },
+      { "id": "H1", "unlocked": false, "input": "keep it simple\n", "expected": "simple it keep\n" },
+      { "id": "H2", "unlocked": false, "input": "a b c d e\n", "expected": "e d c b a\n" }
+    ]
+  },
+  {
+    "id": 8,
+    "title": "Balanced Parentheses",
+    "description": "Given a string of parentheses, check if it is balanced.",
+    "explanation": "You must verify that every opening parenthesis '(' has a matching closing parenthesis ')'. Use a stack or counter logic to ensure all parentheses are balanced.",
+    "sample_input": "(()())\n",
+    "sample_output": "YES\n",
+    "constraints": "1 ≤ |s| ≤ 10^5, s consists only of '(' and ')'",
+    "difficulty": "hard",
+    "templates": {
+      "python": "s = input().strip()\n# TODO: check if parentheses are balanced and print YES/NO\n",
+      "cpp": "#include <iostream>\n#include <string>\nusing namespace std;\nint main(){\n    string s; cin >> s;\n    // TODO: check balance\n    return 0;\n}\n",
+      "java": "import java.util.*;\nclass Main{\n  public static void main(String[] args){\n    Scanner sc = new Scanner(System.in);\n    String s = sc.next();\n    // TODO: check balance\n  }\n}\n",
+      "javascript": "const fs = require('fs');\nconst s = fs.readFileSync(0,'utf8').trim();\n// TODO: check balance\n"
+    },
+    "testcases": [
+      { "id": "T1", "unlocked": true, "input": "(()())\n", "expected": "YES\n" },
+      { "id": "T2", "unlocked": true, "input": "())\n", "expected": "NO\n" },
+      { "id": "H1", "unlocked": false, "input": "()\n", "expected": "YES\n" },
+      { "id": "H2", "unlocked": false, "input": "(()\n", "expected": "NO\n" }
+    ]
+  },
+  {
+    "id": 9,
+    "title": "Two Sum",
+    "description": "Given an array and a target value, find two distinct indices such that the elements at those indices add up to the target. Print the indices (0-based) separated by a space. If multiple pairs exist, return the first one you find scanning from left to right.",
+    "explanation": "You are provided with an integer array and a target sum. Find any pair of indices whose elements add up to the target. If no such pair exists, print '-1 -1'.",
+    "sample_input": "4\n2 7 11 15\n9\n",
+    "sample_output": "0 1\n",
+    "constraints": "1 ≤ n ≤ 10^5, −10^9 ≤ arr[i], target ≤ 10^9",
+    "difficulty": "hard",
+    "templates": {
+      "python": "# Read n, array, and target, then find two indices\ndef two_sum():\n    n = int(input())\n    arr = list(map(int, input().split()))\n    target = int(input())\n    # TODO: find and print indices\n\ntwo_sum()\n",
+      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\nint main(){\n    int n; cin >> n;\n    vector<int> arr(n);\n    for(int i=0;i<n;i++) cin >> arr[i];\n    int target; cin >> target;\n    // TODO: implement two sum logic\n    // Expected output: two indices (0-based) separated by space, e.g., '0 1'\n    return 0;\n}\n",
+      "java": "import java.util.*;\nclass Main{\n  public static void main(String[] args){\n    Scanner sc = new Scanner(System.in);\n    int n = sc.nextInt();\n    int[] arr = new int[n];\n    for(int i=0;i<n;i++) arr[i]=sc.nextInt();\n    int target = sc.nextInt();\n    // TODO: implement two sum logic\n    // Expected output: two indices (0-based) separated by space, e.g., '0 1'\n  }\n}\n",
+      "javascript": "const fs = require('fs');\nconst data = fs.readFileSync(0,'utf8').trim().split(/\\s+/).map(Number);\n// TODO: implement two sum logic\n"
+    },
+    "testcases": [
+      { "id": "T1", "unlocked": true, "input": "4\n2 7 11 15\n9\n", "expected": "0 1\n" },
+      { "id": "T2", "unlocked": true, "input": "5\n3 2 4 6 7\n6\n", "expected": "1 2\n" },
+      { "id": "H1", "unlocked": false, "input": "6\n3 3 6 12 8 4\n6\n", "expected": "0 1\n" },
+      { "id": "H2", "unlocked": false, "input": "4\n1 2 3 4\n10\n", "expected": "-1 -1\n" }
+    ]
+  },
+  {
+    "id": 10,
+    "title": "Palindrome Check",
+    "description": "Read a string and print 'YES' if it is a palindrome, otherwise 'NO'.",
+    "explanation": "You must determine if a given string reads the same forwards and backwards. Ignore case sensitivity and spaces if specified.",
+    "sample_input": "racecar\n",
+    "sample_output": "YES\n",
+    "constraints": "1 ≤ |s| ≤ 10^4, s consists of alphanumeric characters only",
+    "difficulty": "easy",
+    "templates": {
+      "python": "s = input().strip()\n# TODO: check if palindrome and print YES/NO\n",
+      "cpp": "#include <iostream>\n#include <string>\nusing namespace std;\nint main(){\n    string s; cin >> s;\n    // TODO: check palindrome\n    return 0;\n}\n",
+      "java": "import java.util.*;\nclass Main{\n  public static void main(String[] args){\n    Scanner sc = new Scanner(System.in);\n    String s = sc.next();\n    // TODO: check palindrome\n  }\n}\n",
+      "javascript": "const fs = require('fs');\nconst s = fs.readFileSync(0,'utf8').trim();\n// TODO: check palindrome\n"
+    },
+    "testcases": [
+      { "id": "T1", "unlocked": true, "input": "racecar\n", "expected": "YES\n" },
+      { "id": "T2", "unlocked": true, "input": "hello\n", "expected": "NO\n" },
+      { "id": "H1", "unlocked": false, "input": "abba\n", "expected": "YES\n" },
+      { "id": "H2", "unlocked": false, "input": "noon\n", "expected": "YES\n" }
+    ]
+  },
+  {
+    "id": 11,
+    "title": "Sum of Array Elements",
+    "description": "Read N and an array of N integers. Print the sum of all elements.",
+    "explanation": "You must calculate the sum of a list of integers. This problem reinforces loop-based aggregation or built-in summation functions.",
+    "sample_input": "5\n1 2 3 4 5\n",
+    "sample_output": "15\n",
+    "constraints": "1 ≤ N ≤ 10^5, −10^9 ≤ arr[i] ≤ 10^9",
+    "difficulty": "easy",
+    "templates": {
+      "python": "n = int(input())\narr = list(map(int, input().split()))\n# TODO: compute and print sum\n",
+      "cpp": "#include <iostream>\n#include <vector>\nusing namespace std;\nint main(){\n    int n; cin >> n;\n    vector<int> arr(n);\n    for(int i=0;i<n;i++) cin >> arr[i];\n    // TODO: compute and print sum\n    return 0;\n}\n",
+      "java": "import java.util.*;\nclass Main{\n  public static void main(String[] args){\n    Scanner sc = new Scanner(System.in);\n    int n = sc.nextInt();\n    int[] arr = new int[n];\n    for(int i=0;i<n;i++) arr[i] = sc.nextInt();\n    // TODO: compute and print sum\n  }\n}\n",
+      "javascript": "const fs = require('fs');\nconst data = fs.readFileSync(0,'utf8').trim().split(/\\s+/).map(Number);\n// TODO: compute and print sum\n"
+    },
+    "testcases": [
+      { "id": "T1", "unlocked": true, "input": "5\n1 2 3 4 5\n", "expected": "15\n" },
+      { "id": "T2", "unlocked": true, "input": "3\n-1 -2 -3\n", "expected": "-6\n" },
+      { "id": "H1", "unlocked": false, "input": "4\n0 0 0 0\n", "expected": "0\n" },
+      { "id": "H2", "unlocked": false, "input": "6\n10 20 30 40 50 60\n", "expected": "210\n" }
+    ]
+  },
+  {
+    "id": 12,
+    "title": "Prime Number Check",
+    "description": "Read an integer N and print 'YES' if it is prime, else 'NO'.",
+    "explanation": "Determine if a number N is prime by checking if it has exactly two distinct divisors: 1 and itself. Handle small and large N efficiently.",
+    "sample_input": "7\n",
+    "sample_output": "YES\n",
+    "constraints": "1 ≤ N ≤ 10^6",
+    "difficulty": "medium",
+    "templates": {
+      "python": "n = int(input())\n# TODO: check if prime and print YES/NO\n",
+      "cpp": "#include <iostream>\nusing namespace std;\nint main(){\n    int n; cin >> n;\n    // TODO: check if prime\n    return 0;\n}\n",
+      "java": "import java.util.*;\nclass Main{\n  public static void main(String[] args){\n    Scanner sc = new Scanner(System.in);\n    int n = sc.nextInt();\n    // TODO: check if prime\n  }\n}\n",
+      "javascript": "const fs = require('fs');\nconst n = parseInt(fs.readFileSync(0,'utf8').trim());\n// TODO: check if prime\n"
+    },
+    "testcases": [
+      { "id": "T1", "unlocked": true, "input": "7\n", "expected": "YES\n" },
+      { "id": "T2", "unlocked": true, "input": "15\n", "expected": "NO\n" },
+      { "id": "H1", "unlocked": false, "input": "2\n", "expected": "YES\n" },
+      { "id": "H2", "unlocked": false, "input": "1\n", "expected": "NO\n" }
+    ]
+  },
+  {
+    "id": 13,
+    "title": "Matrix Diagonal Sum",
+    "description": "Read N and an N×N matrix. Print the sum of both diagonals.",
+    "explanation": "This problem practices matrix traversal. You must add up both the primary (top-left to bottom-right) and secondary (top-right to bottom-left) diagonals.",
+    "sample_input": "3\n1 2 3\n4 0 6\n7 8 9\n",
+    "sample_output": "30\n",
+    "constraints": "1 ≤ N ≤ 500, −10^3 ≤ matrix[i][j] ≤ 10^3",
+    "difficulty": "medium",
+    "templates": {
+      "python": "n = int(input())\n# TODO: read matrix and sum both diagonals\n",
+      "cpp": "#include <iostream>\nusing namespace std;\nint main(){\n    int n; cin >> n;\n    // TODO: read matrix and sum diagonals\n    return 0;\n}\n",
+      "java": "import java.util.*;\nclass Main{\n  public static void main(String[] args){\n    Scanner sc = new Scanner(System.in);\n    int n = sc.nextInt();\n    // TODO: read matrix and sum diagonals\n  }\n}\n",
+      "javascript": "const fs = require('fs');\nconst data = fs.readFileSync(0,'utf8').trim().split(/\\s+/).map(Number);\n// TODO: read matrix and sum diagonals\n"
+    },
+    "testcases": [
+      { "id": "T1", "unlocked": true,  "input": "3\n1 2 3\n4 0 6\n7 8 9\n", "expected": "30\n" },
+      { "id": "T2", "unlocked": true,  "input": "2\n1 2\n3 4\n",           "expected": "10\n" },
+      { "id": "T3", "unlocked": true,  "input": "5\n1 0 0 0 2\n0 3 0 4 0\n0 0 5 0 0\n0 6 0 7 0\n8 0 0 0 9\n", "expected": "36\n" },
+      { "id": "H1", "unlocked": false, "input": "4\n0 1 2 3\n4 5 6 7\n8 9 1 2\n3 4 5 6\n", "expected": "30\n" }
+    ]
+  },
+  {
+    "id": 14,
+    "title": "Fibonacci Sequence",
+    "description": "Read an integer N and print the first N Fibonacci numbers separated by spaces.",
+    "explanation": "The Fibonacci sequence starts with 0 and 1. Each subsequent term is the sum of the previous two. Print the first N terms in sequence.",
+    "sample_input": "5\n",
+    "sample_output": "0 1 1 2 3\n",
+    "constraints": "1 ≤ N ≤ 10^3",
+    "difficulty": "medium",
+    "templates": {
+      "python": "n = int(input())\n# TODO: print first n Fibonacci numbers\n",
+      "cpp": "#include <iostream>\nusing namespace std;\nint main(){\n    int n; cin >> n;\n    // TODO: print first n Fibonacci numbers\n    return 0;\n}\n",
+      "java": "import java.util.*;\nclass Main{\n  public static void main(String[] args){\n    Scanner sc = new Scanner(System.in);\n    int n = sc.nextInt();\n    // TODO: print first n Fibonacci numbers\n  }\n}\n",
+      "javascript": "const fs = require('fs');\nconst n = parseInt(fs.readFileSync(0,'utf8').trim());\n// TODO: print first n Fibonacci numbers\n"
+    },
+    "testcases": [
+      { "id": "T1", "unlocked": true, "input": "5\n", "expected": "0 1 1 2 3\n" },
+      { "id": "T2", "unlocked": true, "input": "1\n", "expected": "0\n" },
+      { "id": "H1", "unlocked": false, "input": "10\n", "expected": "0 1 1 2 3 5 8 13 21 34\n" },
+      { "id": "H2", "unlocked": false, "input": "3\n", "expected": "0 1 1\n" }
+    ]
+  },
+  {
+    "id": 15,
+    "title": "Longest Word",
+    "description": "Read a line of text and print the longest word.",
+    "explanation": "Split the input line into words and print the one with the greatest length. If multiple words have the same length, print the first one.",
+    "sample_input": "find the longest word here\n",
+    "sample_output": "longest\n",
+    "constraints": "1 ≤ |line| ≤ 10^4, words separated by spaces",
+    "difficulty": "hard",
+    "templates": {
+      "python": "line = input().strip()\n# TODO: find and print the longest word\n",
+      "cpp": "#include <iostream>\n#include <string>\n#include <sstream>\nusing namespace std;\nint main(){\n    string line; getline(cin, line);\n    // TODO: find longest word\n    return 0;\n}\n",
+      "java": "import java.util.*;\nclass Main{\n  public static void main(String[] args){\n    Scanner sc = new Scanner(System.in);\n    String line = sc.nextLine();\n    // TODO: find longest word\n  }\n}\n",
+      "javascript": "const fs = require('fs');\nconst line = fs.readFileSync(0,'utf8').trim();\n// TODO: find and print the longest word\n"
+    },
+    "testcases": [
+      { "id": "T1", "unlocked": true, "input": "find the longest word here\n", "expected": "longest\n" },
+      { "id": "T2", "unlocked": true, "input": "alpha beta gamma\n", "expected": "alpha\n" },
+      { "id": "H1", "unlocked": false, "input": "a ab abc abcd abc\n", "expected": "abcd\n" },
+      { "id": "H2", "unlocked": false, "input": "lorem ipsum dolor sit amet\n", "expected": "lorem\n" }
+    ]
+  }
+]

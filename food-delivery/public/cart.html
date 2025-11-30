@@ -1,0 +1,629 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cart • bitecode</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root {
+      --accent: #16a34a;
+      --text: #0e0e0e;
+      --muted: #6a6f73;
+      --card: #fff;
+      --radius: 16px;
+      --overlay: rgba(0, 0, 0, .35);
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: var(--overlay);
+      z-index: 0;
+    }
+
+    .navbar {
+      position: relative;
+      z-index: 3;
+      background: rgba(255, 255, 255, .9) !important;
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid rgba(0, 0, 0, .06)
+    }
+
+    .brand-logo {
+      height: 48px;
+      width: auto;
+    }
+
+    .brand {
+      font-weight: 800;
+      letter-spacing: .2px;
+      color: #0e0e0e;
+      text-decoration: none
+    }
+
+    .brand .accent {
+      color: var(--accent)
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 2;
+    }
+
+    .badge-cart {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      background: #dc3545;
+    }
+
+    .group-card {
+      border: 1px solid #eaeaea;
+      background: #fff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 12px 24px rgba(0, 0, 0, .08);
+    }
+
+    .group-header {
+      background: #fff;
+      border-bottom: 1px solid #eee;
+    }
+
+    .item-thumb {
+      width: 84px;
+      height: 84px;
+      object-fit: cover;
+      border-radius: 12px;
+    }
+
+    .qty-input {
+      width: 80px;
+    }
+
+    .summary-card {
+      border: 1px solid #eaeaea;
+      background: #fff;
+      border-radius: 16px;
+    }
+
+    .section-title {
+      font-weight: 800;
+      color: #fff;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, .4);
+    }
+
+    .select-restaurant {
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+
+    footer {
+      background: rgba(255, 255, 255, .9);
+      border-top: 1px solid rgba(0, 0, 0, .06);
+      backdrop-filter: blur(6px);
+    }
+
+    .social a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid #eaeaea;
+      color: #0e0e0e;
+      text-decoration: none
+    }
+
+    .social a:hover {
+      background: #f5f5f5
+    }
+
+    .alert-floating {
+      position: fixed;
+      top: 86px;
+      right: 16px;
+      z-index: 4;
+      min-width: 260px;
+    }
+
+    footer a {
+      color: #6a6f73;
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+
+    footer a:hover {
+      color: #0e0e0e;
+      text-decoration: underline;
+    }
+
+    html,
+    body {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
+
+    body {
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color: var(--text);
+      margin: 0;
+      background:
+        linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.25)),
+        url('https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?q=80&w=2400&auto=format&fit=crop');
+      background-size: cover;
+      background-position: center;
+      background-attachment: fixed;
+    }
+
+    main {
+      flex: 1;
+      /* fill available vertical space */
+      position: relative;
+      z-index: 2;
+      padding-bottom: 3rem;
+      /* ensures footer never overlaps */
+    }
+
+    footer {
+      background: rgba(255, 255, 255, .9);
+      border-top: 1px solid rgba(0, 0, 0, .06);
+      backdrop-filter: blur(6px);
+      margin-top: auto;
+      /* <— the magic line */
+    }
+  </style>
+</head>
+
+<body>
+  <!-- NAV -->
+  <nav class="navbar sticky-top">
+    <div class="container py-2">
+      <a class="navbar-brand d-inline-flex align-items-center gap-2" href="/index.html">
+        <img src="/assets/BiteCodeNOBG.png" alt="BiteCode logo" class="brand-logo">
+      </a>
+      <div class="d-flex align-items-center gap-2 ms-auto">
+        <a class="btn btn-outline-secondary rounded-pill" href="/orders.html">My Orders</a>
+        <a class="position-relative btn btn-outline-primary rounded-pill" href="/cart.html" id="cartLink">
+          <span class="me-1">Cart</span>
+          <span class="position-absolute translate-middle badge rounded-pill badge-cart" id="cartCount"
+            style="display:none;">0</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+
+  <!-- ALERT -->
+  <div id="alert" class="alert d-none alert-floating" role="alert"></div>
+
+  <main class="container py-4 wrap mb-5">
+    <h1 class="h4 section-title mb-3">My Cart</h1>
+
+    <!-- GROUPED CART -->
+    <div id="cartGroups" class="d-flex flex-column gap-3"></div>
+
+    <!-- GLOBAL SUMMARY + SELECTED SUMMARY -->
+    <div id="summary" class="mt-3"></div>
+
+    <!-- ACTIONS -->
+    <div class="mt-3 d-flex flex-wrap gap-2">
+      <button class="btn btn-outline-light" id="clearBtn">Clear Cart</button>
+      <button class="btn btn-success" id="checkoutBtn" disabled>Checkout Selected</button>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // ---- Config ----
+    const API_BASE = (window.API_BASE || (location.origin + "/api"));
+    const groupsEl = document.getElementById('cartGroups');
+    const cartCountEl = document.getElementById('cartCount');
+    const summaryEl = document.getElementById('summary');
+    const alertBox = document.getElementById('alert');
+    const checkoutBtn = document.getElementById('checkoutBtn');
+
+    let selectedRestaurantId = null;
+    let cachedGroups = [];
+
+    const money = n => `$${(Number(n) || 0).toFixed(2)}`;
+    function showAlert(type, msg) {
+      alertBox.className = `alert alert-${type} alert-floating`;
+      alertBox.textContent = msg;
+      alertBox.classList.remove('d-none');
+      setTimeout(() => alertBox.classList.add('d-none'), 2500);
+    }
+
+    // ---- Fetch helpers ----
+    async function fetchCart() {
+      const res = await fetch(`${API_BASE}/cart`, { credentials: "include" });
+      if (res.status === 401) { location.href = "/customer-login.html"; return []; }
+      if (!res.ok) { showAlert('danger', 'Failed to load cart'); return []; }
+      return res.json();
+    }
+    async function fetchRestaurant(rid) {
+      try {
+        const res = await fetch(`${API_BASE}/restaurants/${encodeURIComponent(rid)}`, { credentials: 'include' });
+        if (!res.ok) {
+          console.warn('Failed to fetch restaurant', rid);
+          return null;
+        }
+        return await res.json();
+      } catch (e) {
+        console.error('Error fetching restaurant', e);
+        return null;
+      }
+    }
+
+    // ---- Grouping ----
+    const baseRid = (r) => (!r ? null : (typeof r === 'string' ? r : (r._id || r.id || null)));
+    function groupByRestaurant(items) {
+      const map = new Map();
+      for (const it of items) {
+        const m = it.menuItemId || {};
+        const rid = baseRid(m.restaurantId) || 'unknown';
+        if (!map.has(rid)) {
+          map.set(rid, {
+            restaurantId: rid,
+            name: (m.restaurantId && m.restaurantId.name) || it.restaurantName || 'Restaurant',
+            fee: (m.restaurantId && m.restaurantId.deliveryFee) || 0,
+            eta: (m.restaurantId && m.restaurantId.etaMins) || 30,
+            items: [],
+            subtotal: 0
+          });
+        }
+        const g = map.get(rid);
+        const price = Number(m.price || 0);
+        const qty = Number(it.quantity || 1);
+        g.items.push(it);
+        g.subtotal += price * qty;
+      }
+      return [...map.values()];
+    }
+
+    async function enrichGroups(groups) {
+      const needs = groups.filter(g => g.restaurantId && (!g.name || g.name === 'Restaurant'));
+      for (const g of needs) {
+        const r = await fetchRestaurant(g.restaurantId);
+        if (r) {
+          g.name = r.name || g.name;
+          g.fee = typeof r.deliveryFee === 'number' ? r.deliveryFee : g.fee;
+          g.eta = r.etaMins || g.eta;
+        }
+      }
+      return groups;
+    }
+
+    function setCartBadge(n) {
+      if (n > 0) { cartCountEl.textContent = n; cartCountEl.style.display = 'inline-block'; }
+      else { cartCountEl.style.display = 'none'; }
+    }
+
+    // ---- Render ----
+    async function renderSummary(groups) {
+      if (!groups.length) { summaryEl.innerHTML = ''; return; }
+      const grand = groups.reduce((a, g) => a + g.subtotal, 0);
+      // 🧩 Auto-apply coupon discount on selected restaurant
+      let discount = 0;
+      if (selectedRestaurantId) {
+        const sel = groups.find(g => g.restaurantId === selectedRestaurantId);
+        if (sel) {
+          const result = await applyBestCoupon(sel.subtotal || 0);
+          discount = result.discount;
+        }
+      }
+
+      const sel = selectedRestaurantId ? groups.find(g => g.restaurantId === selectedRestaurantId) : null;
+
+      let disableCheckout = !sel;
+      if (sel && sel.hasUnavailable) disableCheckout = true;
+
+      checkoutBtn.disabled = disableCheckout;
+
+      summaryEl.innerHTML = `
+    <div class="summary-card p-3 mt-2">
+      <div class="d-flex justify-content-between">
+        <span class="fw-semibold">Items total</span>
+        <span>${money(grand)}</span>
+      </div>
+      ${sel ? `
+      <div class="d-flex justify-content-between mt-2">
+        <span class="text-secondary">Selected restaurant</span>
+        <span>${sel.name} • ${money(sel.subtotal)}</span>
+      </div>` : `
+      <div class="text-secondary small mt-2">Select one restaurant below to checkout.</div>
+      `}
+      ${sel && sel.hasUnavailable ? `
+        <div class="text-danger small mt-2">⚠ Some items are unavailable — please remove them before checkout.</div>
+      ` : ''}
+      <div class="text-secondary small mt-2">Delivery fees are per-restaurant and added at checkout.</div>
+      <div id="couponInfo" class="mt-2"></div>
+    </div>`;
+    }
+
+    async function renderGroups(groups) {
+      if (!groups.length) {
+        groupsEl.innerHTML = `<div class="alert alert-light text-dark shadow-sm">Your cart is empty.</div>`;
+        summaryEl.innerHTML = '';
+        setCartBadge(0);
+        return;
+      }
+
+      const totalItems = groups.reduce((a, g) => a + g.items.length, 0);
+      setCartBadge(totalItems);
+
+      groupsEl.innerHTML = groups.map(g => {
+        const itemsHtml = g.items.map(i => {
+          const m = i.menuItemId || {};
+          const price = Number(m.price || 0);
+          const qty = Number(i.quantity || 1);
+          const line = price * qty;
+          const img = m.imageUrl || 'https://images.unsplash.com/photo-1498654896293-37aacf113fd9?q=80&w=800&auto=format&fit=crop';
+          const name = m.name || 'Item';
+          const unavailable = m.isAvailable === false;
+
+          return `
+        <div class="p-3 border-bottom ${unavailable ? 'opacity-50' : ''}">
+          <div class="d-flex align-items-center gap-3">
+            <img class="item-thumb" src="${img}" alt="${name}">
+            <div class="flex-grow-1">
+              <div class="fw-semibold">${name}
+                ${unavailable ? '<span class="badge bg-secondary ms-2">Unavailable</span>' : ''}
+              </div>
+              <div class="text-secondary small">${money(price)} each</div>
+              <div class="mt-2 d-flex align-items-center gap-2">
+                <label class="text-secondary small">Qty</label>
+                <input class="form-control qty-input" type="number" min="1" value="${qty}"
+                       ${unavailable ? 'disabled' : ''}
+                       onchange="updateQty('${i._id}', this.value)">
+              </div>
+            </div>
+            <div class="text-end">
+              <div class="fw-bold">${money(line)}</div>
+              <button class="btn btn-outline-danger btn-sm mt-2" onclick="removeItem('${i._id}')">Remove</button>
+            </div>
+          </div>
+        </div>`;
+        }).join('');
+
+        const hasUnavailable = g.items.some(i => i.menuItemId?.isAvailable === false);
+        g.hasUnavailable = hasUnavailable;
+
+        const metaBits = [];
+        if (g.eta) metaBits.push(`${g.eta} min`);
+        if (typeof g.fee === 'number') metaBits.push(`$${g.fee.toFixed(2)} delivery`);
+        const meta = metaBits.join(' • ');
+
+        const checked = selectedRestaurantId === g.restaurantId ? 'checked' : '';
+
+        return `
+      <div class="group-card">
+        <div class="group-header p-3 d-flex justify-content-between align-items-center">
+          <div class="d-flex align-items-center gap-3">
+            <div class="select-restaurant">
+              <input type="radio" name="selectRestaurant" ${checked}
+                     onchange="selectRestaurant('${g.restaurantId}')">
+              <span class="fw-semibold">${g.name || 'Restaurant'}</span>
+            </div>
+          </div>
+          <div class="text-secondary small">${meta}</div>
+        </div>
+        ${itemsHtml}
+        <div class="p-3 d-flex justify-content-between align-items-center">
+          <div class="text-secondary">
+            Subtotal
+            ${hasUnavailable ? '<div class="text-danger small">⚠ Some items unavailable</div>' : ''}
+          </div>
+          <div class="fw-bold">${money(g.subtotal)}</div>
+        </div>
+      </div>`;
+      }).join('');
+
+      await renderSummary(groups);
+    }
+
+    // Fetch active coupons and show best one
+    async function applyBestCoupon(subtotal) {
+      try {
+        const res = await fetch(`${API_BASE}/coupons`, { credentials: 'include' });
+        if (!res.ok) return { discount: 0, coupon: null };
+
+        const coupons = await res.json();
+        if (!Array.isArray(coupons) || coupons.length === 0) {
+          document.getElementById('couponInfo').innerHTML = "";
+          return { discount: 0, coupon: null };
+        }
+
+        // pick highest discount%
+        coupons.sort((a, b) => (b.discountPct || 0) - (a.discountPct || 0));
+        const best = coupons[0];
+        const discount = Math.round(subtotal * (best.discountPct / 100));
+
+        // show banner
+        document.getElementById('couponInfo').innerHTML = `
+      <div class="alert alert-success p-2 mb-0">
+        🎟️ <strong>${best.label}</strong> — ${best.discountPct}% off<br/>
+        <code>${best.code}</code> applied automatically
+      </div>
+    `;
+
+        return { discount, coupon: best };
+      } catch (err) {
+        console.error("Coupon fetch error:", err);
+        document.getElementById('couponInfo').innerHTML = "";
+        return { discount: 0, coupon: null };
+      }
+    }
+
+
+    // ---- Actions ----
+    async function updateQty(id, qty) {
+      const res = await fetch(`${API_BASE}/cart/` + id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ quantity: Number(qty) })
+      });
+      if (res.ok) init(); else {
+        const err = await res.json().catch(() => ({}));
+        showAlert('danger', 'Error: ' + (err.error || 'Unable to update'));
+      }
+    }
+    async function removeItem(id) {
+      const res = await fetch(`${API_BASE}/cart/` + id, { method: 'DELETE', credentials: 'include' });
+      if (res.ok) init();
+    }
+    async function clearCart() {
+      const res = await fetch(`${API_BASE}/cart`, { method: 'DELETE', credentials: 'include' });
+      if (res.ok) { selectedRestaurantId = null; init(); }
+    }
+
+    //Redirect to custom mock payment page instead of placing order immediately
+    async function checkoutSelected() {
+      if (!selectedRestaurantId) {
+        showAlert('warning', 'Please select a restaurant to checkout.');
+        return;
+      }
+      const group = cachedGroups.find(g => g.restaurantId === selectedRestaurantId);
+      if (!group || !group.items?.length) {
+        showAlert('warning', 'Selected restaurant has no items.');
+        return;
+      }
+
+      const itemIds = group.items.map(i => String(i._id));
+      const qs = new URLSearchParams({ itemIds: itemIds.join(',') }).toString();
+
+
+      location.href = `/payment.html?${qs}`;
+    }
+
+
+    function selectRestaurant(rid) {
+      selectedRestaurantId = rid;
+      renderSummary(cachedGroups);
+    }
+
+    document.getElementById('clearBtn').addEventListener('click', clearCart);
+    checkoutBtn.addEventListener('click', checkoutSelected);
+    window.updateQty = updateQty;
+    window.removeItem = removeItem;
+    window.selectRestaurant = selectRestaurant;
+
+    // ---- Init ----
+    async function init() {
+      const items = await fetchCart();
+      // console.log("Fetched cart items:", items);
+      const groups = groupByRestaurant(items);
+      const enriched = await enrichGroups(groups);
+      cachedGroups = enriched;
+      renderGroups(enriched);
+    }
+
+    async function updateCartBadge() {
+      try {
+        const res = await fetch(`${API_BASE}/cart`, { credentials: 'include' });
+        if (!res.ok) throw new Error();
+        const data = await res.json();
+        const count =
+          Array.isArray(data)
+            ? data.length
+            : Array.isArray(data.items)
+              ? data.items.length
+              : 0;
+        if (count > 0) {
+          cartCountEl.textContent = count;
+          cartCountEl.style.display = 'inline-block';
+        } else {
+          cartCountEl.style.display = 'none';
+        }
+      } catch {
+        cartCountEl.style.display = 'none';
+      }
+    }
+
+    init().then(updateCartBadge);
+
+
+  </script>
+
+  <!-- FOOTER -->
+  <footer class="border-top bg-white">
+    <div class="container py-5">
+      <div class="row gy-4">
+        <!-- Left brand block -->
+        <div class="col-12 col-md-4 text-center text-md-start">
+          <a class="navbar-brand d-inline-flex align-items-center gap-2" href="/index.html">
+            <img src="/assets/BiteCodeNOBG.png" alt="BiteCode logo" class="brand-logo">
+          </a>
+          <p class="small text-muted mb-0">
+            © <span id="yearFooter"></span> BiteCode — Because coding’s better with curry 🥘
+          </p>
+        </div>
+
+        <!-- Middle stacked dashboards -->
+        <div class="col-12 col-md-4 text-center">
+          <h6 class="fw-bold text-uppercase text-muted mb-3">Dashboards</h6>
+          <ul class="list-unstyled small mb-0">
+            <li class="mb-2"><a class="link-muted" href="/customer-login.html">Customer Login</a></li>
+            <li class="mb-2"><a class="link-muted" href="/driver-login.html">Driver Login</a></li>
+            <li class="mb-2"><a class="link-muted" href="/restaurant-login.html">Restaurant Login</a></li>
+          </ul>
+        </div>
+
+        <!-- Right playful links + socials -->
+        <div class="col-12 col-md-4 text-center text-md-end">
+          <h6 class="fw-bold text-uppercase text-muted mb-3">Get Started</h6>
+          <ul class="list-unstyled small mb-4">
+            <li class="mb-2"><a class="link-muted" href="/customer-register.html">Join as a Customer</a></li>
+            <li class="mb-2"><a class="link-muted" href="/register-driver.html">Partner as a Driver</a></li>
+            <li class="mb-2"><a class="link-muted" href="/restaurant-register.html">Register a Restaurant 🍽️</a></li>
+            <li class="mb-2">
+              <a class="link-muted" href="/about.html">About Us</a>
+            </li>
+          </ul>
+
+          <ul class="list-unstyled small mb-0 d-flex justify-content-center justify-content-md-end gap-3">
+            <li>
+              <a class="link-muted" href="https://www.instagram.com/bitecodese2025/" target="_blank" aria-label="Instagram"
+                title="Instagram">
+                <i class="bi bi-instagram fs-4"></i>
+              </a>
+            </li>
+            <!-- <li>
+              <a class="link-muted" href="https://x.com/bitecode" target="_blank" aria-label="Twitter/X"
+                title="Twitter/X">
+                <i class="bi bi-twitter-x fs-4"></i>
+              </a>
+            </li> -->
+            <li>
+              <a class="link-muted" href="https://www.facebook.com/profile.php?id=61583523866090" target="_blank" aria-label="Facebook"
+                title="Facebook">
+                <i class="bi bi-facebook fs-4"></i>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    (function () {
+      var y = document.getElementById("yearFooter");
+      if (y) y.textContent = new Date().getFullYear();
+    })();
+  </script>
+
+</body>
+
+</html>

@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:13
+    restart: always
+    environment:
+      POSTGRES_DB: judge0
+      POSTGRES_USER: judge0
+      POSTGRES_PASSWORD: judge0
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  judge0:
+    image: judge0/judge0:latest
+    restart: always
+    depends_on:
+      - postgres
+      - redis
+    environment:
+      - POSTGRES_DB=judge0
+      - POSTGRES_USER=judge0
+      - POSTGRES_PASSWORD=judge0
+      - POSTGRES_HOST=postgres
+      - REDIS_HOST=redis
+      - ENABLE_DEBUG=false
+    ports:
+      - "2358:2358"
+    platform: linux/amd64  # important for M4 Macs
+    command: ["./scripts/server"]
+
+  redis:
+    image: redis:7
+    restart: always
+    ports:
+      - "6379:6379"
+
+volumes:
+  pgdata:

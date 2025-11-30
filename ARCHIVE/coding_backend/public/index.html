@@ -1,0 +1,90 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>CodeEats - Coding Page</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    textarea { width: 100%; font-family: monospace; }
+    pre { background:#f5f5f5; padding:10px; }
+    .test { border:1px solid #ddd; padding:8px; margin:8px 0; }
+  </style>
+</head>
+<body>
+  <h1>CodeEats - Coding Page</h1>
+  <div>
+    <label for="probs">Choose a problem:</label>
+    <select id="probs"></select>
+  </div>
+
+  <h3 id="title"></h3>
+  <p id="desc"></p>
+
+  <textarea id="code" rows="12">// Example: implement add(a,b) and print result\nfunction add(a,b){\n  return a+b;\n}\n\n// For Node, print result for judge\nconst input = require('fs').readFileSync(0,'utf8').trim().split(/\\s+/);\nconst a = Number(input[0]);\nconst b = Number(input[1]);\nconsole.log(add(a,b));</textarea>
+  <br/>
+  <button id="run">Run & Check</button>
+
+  <h3>Results</h3>
+  <div id="results"></div>
+
+<script>
+async function loadProblems() {
+  const res = await fetch('/api/problems');
+  const problems = await res.json();
+  const sel = document.getElementById('probs');
+  sel.innerHTML = '';
+  problems.forEach(p => {
+    const o = document.createElement('option');
+    o.value = p._id;
+    o.text = p.title;
+    sel.appendChild(o);
+  });
+  if (problems.length) {
+    sel.value = problems[0]._id;
+    showProblem(problems[0]._id);
+  }
+}
+
+async function showProblem(id) {
+  const r = await fetch('/api/problems/' + id);
+  const p = await r.json();
+  document.getElementById('title').textContent = p.title;
+  document.getElementById('desc').textContent = p.description || '';
+}
+
+document.getElementById('probs').addEventListener('change', (e) => {
+  showProblem(e.target.value);
+});
+
+document.getElementById('run').addEventListener('click', async () => {
+  const id = document.getElementById('probs').value;
+  const code = document.getElementById('code').value;
+  document.getElementById('results').innerHTML = 'Running...';
+  const res = await fetch('/api/submit/' + id, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ source_code: code })
+  });
+  const data = await res.json();
+  const out = document.getElementById('results');
+  out.innerHTML = '';
+  if (data.error) {
+    out.textContent = 'Error: ' + data.error;
+    return;
+  }
+  out.innerHTML += '<p><strong>All Passed:</strong> ' + data.allPassed + '</p>';
+  data.results.forEach((r, i) => {
+    const div = document.createElement('div');
+    div.className = 'test';
+    div.innerHTML = '<strong>Test #' + (i+1) + '</strong><br/>Input: <pre>' + r.input + '</pre>' +
+                    'Expected: <pre>' + r.expected + '</pre>' +
+                    'Output: <pre>' + r.userOutput + '</pre>' +
+                    '<p>Passed: ' + r.passed + '</p>';
+    out.appendChild(div);
+  });
+});
+
+loadProblems();
+</script>
+</body>
+</html>

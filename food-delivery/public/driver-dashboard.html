@@ -1,0 +1,514 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Driver Dashboard • bitecode</title>
+
+  <!-- CSS / Fonts -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --accent: #16a34a;
+      --text: #0e0e0e;
+      --muted: #6a6f73;
+      --bg: #f9fafb;
+      --radius: 16px;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    /* Navbar */
+    .navbar {
+      background: #fff !important;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    }
+
+    .brand-logo {
+      height: 80px;
+      width: auto;
+    }
+
+    /* Tabs */
+    .nav-tabs .nav-link.active {
+      color: var(--accent);
+      font-weight: 600;
+      border-color: var(--accent) var(--accent) #fff;
+    }
+
+    /* Cards */
+    .card {
+      border-radius: var(--radius);
+      border: 1px solid rgba(0, 0, 0, .05);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, .04);
+    }
+
+    /* Buttons */
+    .btn-accent {
+      background: var(--accent);
+      color: #fff;
+      border-radius: 999px;
+    }
+
+    .btn-accent:hover {
+      background: #15803d;
+      color: #fff;
+    }
+
+    #statusText {
+      transition: color 0.2s ease-in-out;
+    }
+
+    footer {
+      background: #ffffff;
+    }
+
+    footer .link-muted {
+      color: var(--muted);
+      text-decoration: none;
+    }
+
+    footer .link-muted:hover {
+      text-decoration: underline;
+      color: #0e0e0e;
+    }
+
+    footer .brand-logo {
+      height: 50px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Navbar -->
+  <nav class="navbar sticky-top">
+    <div class="container py-2 d-flex justify-content-between align-items-center">
+      <a class="navbar-brand d-inline-flex align-items-center gap-2" href="/index.html">
+        <img src="/assets/BiteCodeNOBG.png" alt="BiteCode logo" class="brand-logo">
+      </a>
+
+      <div class="form-check form-switch d-flex align-items-center gap-2">
+        <input class="form-check-input" type="checkbox" id="activeSwitch">
+        <label class="form-check-label fw-semibold" for="activeSwitch">
+          <span id="statusText" class="text-muted">🔴 Offline</span>
+        </label>
+      </div>
+
+      <a href="/api/driver/logout" class="btn btn-outline-danger rounded-pill">Logout</a>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <main class="container py-4 flex-grow-1">
+    <h2 class="fw-bold mb-4">Welcome, Driver!</h2>
+
+    <!-- Navigation Tabs -->
+    <ul class="nav nav-tabs" id="myTab">
+      <li class="nav-item"><a class="nav-link active" id="new-tab" data-bs-toggle="tab" href="#new">🆕 New Orders</a>
+      </li>
+      <li class="nav-item"><a class="nav-link" id="pending-tab" data-bs-toggle="tab" href="#pending">📦 Pending
+          Deliveries</a></li>
+      <li class="nav-item"><a class="nav-link" id="payments-tab" data-bs-toggle="tab" href="#payments">💵 Payments</a>
+      </li>
+    </ul>
+
+    <!-- Tab Content -->
+    <div class="tab-content mt-4">
+      <div id="new" class="tab-pane fade show active">
+        <div id="newOrders" class="mt-3"></div>
+      </div>
+
+      <div id="pending" class="tab-pane fade">
+        <div id="pendingOrders" class="mt-3"></div>
+      </div>
+
+      <div id="payments" class="tab-pane fade">
+        <form id="dateForm" class="row g-3 mb-3">
+          <div class="col-auto">
+            <input type="date" id="startDate" class="form-control">
+          </div>
+          <div class="col-auto">
+            <input type="date" id="endDate" class="form-control">
+          </div>
+          <div class="col-auto">
+            <button type="submit" class="btn btn-accent">View</button>
+          </div>
+        </form>
+
+        <div class="card p-3 mb-4">
+          <h5 class="fw-semibold mb-3">📈 Monthly Earnings</h5>
+          <canvas id="earningsChart" height="120"></canvas>
+        </div>
+
+        <div id="paymentsList"></div>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-top bg-white">
+    <div class="container py-4 text-center small text-muted">
+      © <span id="yearFooter"></span> BiteCode - Because coding’s better with curry 🥘
+    </div>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    document.getElementById('yearFooter').textContent = new Date().getFullYear();
+    const API_BASE = (window.API_BASE || (location.origin + "/api"));
+    const activeSwitch = document.getElementById("activeSwitch");
+    const statusText = document.getElementById("statusText");
+    let newOrdersInterval = null;
+    let locationUpdateInterval = null;
+
+    // === Load New Orders ===
+    async function loadNewOrders() {
+      const res = await fetch(`${API_BASE}/driver/orders/new`, { credentials: 'include' });
+      const orders = await res.json();
+      const div = document.getElementById('newOrders');
+      div.innerHTML = orders.length
+        ? orders.map(o => `
+          <div class="card mb-3 p-3">
+            <div class="d-flex justify-content-between">
+              <div>
+                <p><b>Pickup (Restaurant):</b> ${o.restaurantLocation}</p>
+                <p><b>Delivery (Customer):</b> ${o.customerLocation}</p>
+                <p><b>Payment:</b> $${o.deliveryPayment}</p>
+                <p><b>Placed At:</b> ${new Date(o.createdAt).toLocaleString()}</p>
+              </div>
+              <div class="align-self-center">
+                <button class="btn btn-accent" onclick="acceptOrder('${o._id}')">Accept</button>
+              </div>
+            </div>
+          </div>`).join('')
+        : `<p class="text-muted">No new orders available.</p>`;
+    }
+
+    // === Accept Order ===
+    window.acceptOrder = async function (id) {
+      await fetch(`${API_BASE}/driver/orders/accept/${id}`, { method: 'POST', credentials: 'include' });
+      loadNewOrders();
+      loadPending();
+    }
+
+    // === Pending Deliveries ===
+    function statusBadge(s) {
+      const map = {
+        preparing: "secondary",
+        ready_for_pickup: "warning",
+        out_for_delivery: "primary",
+        delivered: "success"
+      };
+      const label = (s || "").replaceAll("_", " ");
+      const cls = map[s] || "secondary";
+      return `<span class="badge text-bg-${cls} text-uppercase">${label}</span>`;
+    }
+
+    async function loadPending() {
+      const res = await fetch(`${API_BASE}/driver/orders/pending`, { credentials: 'include' });
+      const orders = await res.json();
+      const div = document.getElementById('pendingOrders');
+      div.innerHTML = orders.length
+        ? orders.map(o => `
+        <div class="card shadow-sm border-0 mb-3">
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <div class="fw-semibold mb-1">Order #${o._id.slice(-6)}</div>
+                <div class="small text-muted">Placed ${new Date(o.createdAt).toLocaleString()}</div>
+              </div>
+              ${statusBadge(o.status)}
+            </div>
+
+            <div class="row mt-3 g-2">
+              <div class="col-md-6">
+                <div class="small text-muted">Pickup</div>
+                <div class="fw-medium">${o.restaurantLocation || 'N/A'}</div>
+              </div>
+              <div class="col-md-6">
+                <div class="small text-muted">Deliver to</div>
+                <div class="fw-medium">${o.customerLocation || o.deliveryLocation || 'N/A'}</div>
+              </div>
+            </div>
+
+            <div class="mt-3">
+              <button class="btn btn-success"
+                onclick="markDelivered('${o._id}')"
+                ${o.status !== 'out_for_delivery' ? 'disabled title="Waiting for restaurant to mark Out for Delivery"' : ''}>
+                <i class="bi bi-check2-circle"></i> Mark Delivered
+              </button>
+            </div>
+          </div>
+        </div>`).join('')
+        : `<p class="text-muted">No pending deliveries.</p>`;
+    }
+
+    // === Mark Delivered ===
+    window.markDelivered = async function (id) {
+      try {
+        const res = await fetch(`${API_BASE}/driver/orders/delivered/${id}`, {
+          method: 'POST',
+          credentials: 'include'
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          alert(data.error || 'Failed to mark delivered');
+          return;
+        }
+        alert('Order marked delivered!');
+        await loadPending();
+        await loadNewOrders();
+      } catch (e) {
+        console.error(e);
+        alert('Network error while marking delivered');
+      }
+    };
+
+
+    // 🗺️ GEOLOCATION: Update driver location
+    async function updateDriverLocation() {
+      if (!navigator.geolocation) {
+        console.warn("Geolocation is not supported by this browser");
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const { latitude: lat, longitude: lng } = position.coords;
+          try {
+            const res = await fetch(`${API_BASE}/driver/location`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({ lat, lng })
+            });
+            const data = await res.json();
+            if (res.ok) {
+              console.log("Location updated:", data);
+            } else {
+              console.error("Failed to update location:", data.error);
+            }
+          } catch (error) {
+            console.error("Error updating location:", error);
+          }
+        },
+        (error) => {
+          console.error("Geolocation error:", error.message);
+        },
+        { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+      );
+    }
+
+    // === Toggle Active / Offline ===
+    async function setDriverActive(isActive) {
+      await fetch("/api/driver/active", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ isActive })
+      });
+
+      statusText.textContent = isActive ? "🟢 Online" : "🔴 Offline";
+      statusText.classList.toggle("text-success", isActive);
+      statusText.classList.toggle("text-muted", !isActive);
+
+      // 🗺️ GEOLOCATION: Start/stop location updates when driver goes online/offline
+      if (isActive) {
+        // Update location immediately
+        updateDriverLocation();
+        // Update location every 30 seconds when active
+        locationUpdateInterval = setInterval(updateDriverLocation, 30000);
+      } else {
+        // Stop location updates when offline
+        if (locationUpdateInterval) {
+          clearInterval(locationUpdateInterval);
+          locationUpdateInterval = null;
+        }
+      }
+
+      if (isActive) {
+        loadNewOrders();
+        if (!newOrdersInterval) newOrdersInterval = setInterval(loadNewOrders, 10000);
+      } else {
+        if (newOrdersInterval) clearInterval(newOrdersInterval);
+        newOrdersInterval = null;
+        document.getElementById("newOrders").innerHTML =
+          `<p class="text-muted">You’re offline. Toggle above to start receiving new orders.</p>`;
+      }
+    }
+
+    activeSwitch.addEventListener("change", () => {
+      setDriverActive(activeSwitch.checked);
+    });
+
+    // === Initialize Driver Dashboard ===
+    // async function initDriverDashboard() {
+    //   const res = await fetch("/api/driver/me", { credentials: "include" });
+    //   const data = await res.json();
+
+    //   if (data.ok) {
+    //     document.querySelector("h2.fw-bold").textContent = `Welcome, ${data.driverName}!`;
+    //     const driverRes = await fetch(`/api/drivers/${data.driverId}`, { credentials: "include" });
+    //     const info = await driverRes.json();
+    //     activeSwitch.checked = info.isActive;
+    //     setDriverActive(info.isActive);
+    //   }
+
+    //   loadPending();
+    // }
+
+    async function initDriverDashboard() {
+      try {
+        // Get session info
+        const res = await fetch("/api/driver/me", { credentials: "include" });
+        const data = await res.json();
+
+        if (!data.ok) {
+          document.querySelector("h2.fw-bold").textContent = "Not logged in";
+          return;
+        }
+
+        // Personalize greeting
+        document.querySelector("h2.fw-bold").textContent = `Welcome, ${data.driverName}!`;
+
+        // Fetch persisted active status from backend
+        const statusRes = await fetch(`${API_BASE}/driver/status`, { credentials: "include" });
+        const statusData = await statusRes.json();
+
+        if (statusData.ok) {
+          activeSwitch.checked = statusData.isActive;
+          setDriverActive(statusData.isActive);
+        } else {
+          activeSwitch.checked = false;
+          setDriverActive(false);
+        }
+
+        // Load current pending deliveries
+        loadPending();
+
+        // // Restore last open tab (optional — after DOMContentLoaded)
+        // const lastTab = localStorage.getItem("driverDashboardActiveTab");
+        // if (lastTab) {
+        //   const tabEl = document.getElementById(lastTab);
+        //   if (tabEl) new bootstrap.Tab(tabEl).show();
+        // }
+
+      } catch (err) {
+        console.error("❌ Error initializing driver dashboard:", err);
+      }
+    }
+
+
+    // === Payments Section ===
+    document.getElementById('dateForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      const start = document.getElementById('startDate').value;
+      const end = document.getElementById('endDate').value;
+      const res = await fetch(`${API_BASE}/driver/payments?start=${start}&end=${end}`, { credentials: 'include' });
+      const data = await res.json();
+      const div = document.getElementById('paymentsList');
+      div.innerHTML = data?.payments?.length
+        ? `<h5>Total: $${data.total}</h5>` +
+        data.payments.map(p => `
+            <div class="card mb-2 p-3">
+              <p><b>${new Date(p.updatedAt).toLocaleString()}</b> — $${p.deliveryPayment}</p>
+            </div>`).join('')
+        : `<p class="text-muted">No payments found for this range.</p>`;
+    });
+
+    // === Earnings Chart ===
+    let earningsChart = null;
+
+    async function renderEarningsChart() {
+      const res = await fetch(`${API_BASE}/driver/payments?start=2025-01-01&end=2025-12-31`, { credentials: 'include' });
+      const data = await res.json();
+
+      const months = Array.from({ length: 12 }, (_, i) => i);
+      const earningsByMonth = months.map(m => {
+        const monthPayments = data.payments?.filter(p => new Date(p.updatedAt).getMonth() === m) || [];
+        return monthPayments.reduce((sum, o) => sum + o.deliveryPayment, 0);
+      });
+
+      const ctx = document.getElementById('earningsChart').getContext('2d');
+      if (earningsChart) earningsChart.destroy();
+
+      earningsChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+          datasets: [{
+            label: 'Earnings ($)',
+            data: earningsByMonth,
+            backgroundColor: 'rgba(22, 163, 74, 0.7)',
+            borderColor: '#16a34a',
+            borderWidth: 1,
+            borderRadius: 6
+          }]
+        },
+        options: {
+          scales: {
+            y: { beginAtZero: true },
+            x: { grid: { display: false } }
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: { callbacks: { label: c => `$${c.formattedValue}` } }
+          }
+        }
+      });
+    }
+
+    // Run chart render whenever Payments tab is opened
+    document.getElementById('payments-tab').addEventListener('shown.bs.tab', renderEarningsChart);
+
+    document.getElementById('new-tab').addEventListener('shown.bs.tab', loadNewOrders);
+    document.getElementById('pending-tab').addEventListener('shown.bs.tab', loadPending);
+
+    // === Preserve Active Tab Between Reloads ===
+    const tabKey = "driverDashboardActiveTab";
+
+    // Save which tab was last opened
+    document.querySelectorAll('#myTab .nav-link').forEach(tab => {
+      tab.addEventListener('shown.bs.tab', e => {
+        localStorage.setItem(tabKey, e.target.id);
+      });
+    });
+
+    // Restore it when page reloads
+    window.addEventListener('DOMContentLoaded', () => {
+      const lastTab = localStorage.getItem(tabKey);
+      if (lastTab) {
+        const tabEl = document.getElementById(lastTab);
+        if (tabEl) {
+          const tab = new bootstrap.Tab(tabEl);
+          tab.show();
+        }
+      }
+    });
+
+    initDriverDashboard();
+  </script>
+</body>
+
+</html>

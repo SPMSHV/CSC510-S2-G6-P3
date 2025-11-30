@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>bitecode — Discover</title>
+
+  <!-- CSS/Fonts -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+  <style>
+    :root {
+      --accent: #16a34a;
+      --text: #0e0e0e;
+      --muted: #6a6f73;
+      --card: #fff;
+      --radius: 16px;
+    }
+
+    body {
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color: var(--text);
+      background:
+        linear-gradient(rgba(255, 255, 255, 0.9), rgba(255, 255, 255, 0.95)),
+        url("https://images.unsplash.com/photo-1600891964599-f61ba0e24092?q=80&w=2400&auto=format&fit=crop") no-repeat center center / cover;
+      background-attachment: fixed;
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center;
+      animation: bgPanZoom 40s ease-in-out infinite alternate;
+    }
+
+    /* 🎞️ Smooth slow zoom + pan */
+    @keyframes bgPanZoom {
+      0% {
+        background-size: 100% auto;
+        background-position: center center;
+      }
+
+      50% {
+        background-size: 105% auto;
+        background-position: center top;
+      }
+
+      100% {
+        background-size: 110% auto;
+        background-position: center bottom;
+      }
+    }
+
+
+    /* Navbar */
+    .navbar {
+      background: #fff !important;
+      border-bottom: 1px solid rgba(0, 0, 0, .06);
+    }
+
+    .brand {
+      font-weight: 800;
+      letter-spacing: .2px;
+      color: #0e0e0e;
+      text-decoration: none
+    }
+
+    .brand .accent {
+      color: var(--accent);
+    }
+
+    .auth-fixed {
+      position: fixed;
+      top: 8px;
+      right: 12px;
+      z-index: 1100;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+
+    #authChip {
+      font-size: .8rem;
+      border: 1px solid transparent;
+    }
+
+    .chip-out {
+      background: #f3f4f6;
+      color: #111827;
+      border-color: #e5e7eb;
+    }
+
+    .chip-in {
+      background: #e6f4ea;
+      color: #166534;
+      border-color: #cce3d2;
+    }
+
+
+    /* Hero */
+    .hero img {
+      height: 360px;
+      object-fit: cover;
+    }
+
+    @media (max-width: 576px) {
+      .hero img {
+        height: 220px;
+      }
+    }
+
+    /* Search */
+    .search-wrap {
+      position: relative;
+    }
+
+    .search-wrap .form-control {
+      padding-left: 3rem;
+      padding-right: 3rem;
+      border-radius: 999px;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      opacity: .6;
+    }
+
+    /* Cards */
+    .restaurant-card {
+      border: 1px solid #eee;
+      background: #fff;
+      border-radius: 16px;
+      overflow: hidden;
+      transition: .2s;
+      height: 100%;
+    }
+
+    .restaurant-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px rgba(0, 0, 0, .08);
+    }
+
+    .restaurant-card .thumb {
+      height: 180px;
+      width: 100%;
+      object-fit: cover;
+    }
+
+    .restaurant-card .meta {
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    .section-title {
+      font-weight: 800;
+    }
+
+    /* Cart badge */
+    .badge-cart {
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      background: #dc3545;
+    }
+
+    /* Compact footer */
+    footer .link-muted {
+      color: var(--muted);
+      text-decoration: none;
+    }
+
+    footer .link-muted:hover {
+      text-decoration: underline;
+      color: #0e0e0e;
+    }
+
+
+    /* Footer */
+    footer {
+      position: relative;
+      z-index: 2;
+      background: #ffffff;
+    }
+
+    footer .link-muted {
+      color: var(--muted);
+      text-decoration: none;
+    }
+
+    footer .link-muted:hover {
+      text-decoration: underline;
+      color: #0e0e0e;
+    }
+
+    /* Logo sizing */
+    .brand-logo {
+      height: 80px;
+      width: auto;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    footer .brand-logo {
+      height: 50px;
+      /* slightly smaller in footer */
+    }
+  </style>
+
+  <!-- OPTIONAL: set API port for dev -->
+  <script>
+    // If your API runs on another port, uncomment and adjust:
+    // window.API_BASE = "http://localhost:3001/api";
+  </script>
+</head>
+
+<body>
+  <!-- NAV -->
+  <nav class="navbar sticky-top">
+    <div class="container py-2">
+      <a class="navbar-brand d-inline-flex align-items-center gap-2" href="/index.html">
+        <img src="/assets/BiteCodeNOBG.png" alt="BiteCode logo" class="brand-logo">
+      </a>
+      <div class="d-flex align-items-center gap-2 ms-auto">
+        <a class="btn btn-outline-secondary rounded-pill" href="/orders.html">My Orders</a>
+        <a class="position-relative btn btn-outline-primary rounded-pill" href="/cart.html" id="cartLink">
+          <span class="me-1">Cart</span>
+          <span class="position-absolute translate-middle badge rounded-pill badge-cart" id="cartCount"
+            style="display:none;">0</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+  <div class="auth-fixed">
+    <span id="authChip" class="badge rounded-pill px-2 py-1 fw-semibold d-none">Status</span>
+    <button id="authBtn" class="btn btn-outline-secondary btn-sm rounded-pill">Sign in</button>
+  </div>
+
+  <!-- HERO CAROUSEL -->
+  <div id="heroCarousel" class="carousel slide hero" data-bs-ride="carousel" data-bs-interval="3500">
+    <div class="carousel-inner">
+      <div class="carousel-item active">
+        <img src="https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=1600&auto=format&fit=crop"
+          class="d-block w-100" alt="Fresh salad">
+      </div>
+      <div class="carousel-item">
+        <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=1600&auto=format&fit=crop"
+          class="d-block w-100" alt="Burgers">
+      </div>
+      <div class="carousel-item">
+        <img src="https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1600&auto=format&fit=crop"
+          class="d-block w-100" alt="Sushi">
+      </div>
+      <div class="carousel-item">
+        <img src="https://images.unsplash.com/photo-1543353071-10c8ba85a904?q=80&w=1600&auto=format&fit=crop"
+          class="d-block w-100" alt="Pasta">
+      </div>
+      <div class="carousel-item">
+        <img src="https://images.unsplash.com/photo-1546554137-f86b9593a222?q=80&w=1600&auto=format&fit=crop"
+          class="d-block w-100" alt="Dessert">
+      </div>
+    </div>
+    <button class="carousel-control-prev" type="button" data-bs-target="#heroCarousel" data-bs-slide="prev">
+      <span class="carousel-control-prev-icon" aria-hidden="true"></span><span class="visually-hidden">Previous</span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#heroCarousel" data-bs-slide="next">
+      <span class="carousel-control-next-icon" aria-hidden="true"></span><span class="visually-hidden">Next</span>
+    </button>
+  </div>
+
+  <main class="container py-4">
+    <!-- SEARCH -->
+    <div class="search-wrap mb-4">
+      <svg class="search-icon" width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <path d="M21 21l-4.3-4.3M10 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16z" stroke="#000" stroke-opacity=".4"
+          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+      <input id="search" class="form-control" placeholder="Search restaurants or cuisine…">
+    </div>
+
+    <!-- SECTION HEADER -->
+    <div class="d-flex align-items-center justify-content-between mb-2">
+      <h2 class="section-title h4 mb-0">Popular near you</h2>
+      <button id="toggleViewBtn" class="btn btn-link">View all</button>
+    </div>
+
+    <!-- GRID -->
+    <div id="grid" class="row g-3"></div>
+  </main>
+
+  <!-- JS -->
+  <script>
+    // API base
+    const API_BASE = (window.API_BASE || (location.origin + "/api"));
+
+    // Elements
+    const grid = document.getElementById('grid');
+    const searchInput = document.getElementById('search');
+    const toggleBtn = document.getElementById('toggleViewBtn');
+    const cartCountEl = document.getElementById('cartCount');
+
+    // set footer year once DOM is ready
+    window.addEventListener('DOMContentLoaded', () => {
+      const yearFooterEl = document.getElementById('yearFooter');
+      if (yearFooterEl) {
+        yearFooterEl.textContent = new Date().getFullYear();
+      }
+    });
+
+    let allRestaurants = [];
+    let showAll = false;
+
+    function showGridMessage(text) {
+      grid.innerHTML = `<div class="col-12 text-center text-muted py-5">${text}</div>`;
+    }
+
+    async function fetchRestaurants(query = "") {
+      const params = query ? ('?q=' + encodeURIComponent(query)) : '';
+      try {
+        const res = await fetch(`${API_BASE}/restaurants${params}`, { credentials: 'include' });
+        if (!res.ok) {
+          console.warn('Failed to load restaurants', res.status);
+          showGridMessage('Could not load restaurants. Try again.');
+          return [];
+        }
+        const data = await res.json();
+        if (!Array.isArray(data)) {
+          showGridMessage('Unexpected response from server.');
+          return [];
+        }
+        return data;
+      } catch (err) {
+        console.error(err);
+        showGridMessage('Network error. Check your server and try again.');
+        return [];
+      }
+    }
+
+    function render(restaurants) {
+      grid.innerHTML = "";
+      const list = showAll ? restaurants : restaurants.slice(0, 10);
+
+      if (!list.length) {
+        showGridMessage('No restaurants found.');
+        toggleBtn.style.visibility = 'hidden';
+        return;
+      }
+
+      for (const r of list) {
+        const col = document.createElement('div');
+        col.className = 'col-12 col-sm-6 col-lg-4';
+
+        const fee = (typeof r.deliveryFee === 'number') ? r.deliveryFee.toFixed(2) : '0.00';
+        const rating = (typeof r.rating === 'number') ? r.rating.toFixed(1) : (r.rating || '4.6');
+        const img = r.imageUrl || '/assets/placeholder-restaurant.jpg';
+
+        col.innerHTML = `
+          <a href="/restaurant.html?id=${encodeURIComponent(r._id)}"
+             class="text-decoration-none text-reset">
+            <div class="restaurant-card">
+              <img class="thumb"
+                   src="${img}"
+                   alt="${r.name}"
+                   loading="lazy"
+                   onerror="this.onerror=null; this.src='/assets/placeholder-restaurant.jpg';">
+              <div class="p-3">
+                <div class="d-flex justify-content-between">
+                  <div class="fw-semibold">${r.name}</div>
+                  <div class="text-muted small">⭐ ${rating}</div>
+                </div>
+                <div class="meta">
+                  ${r.cuisine || 'Food'} • $${fee} delivery
+                </div>
+              </div>
+            </div>
+          </a>
+        `;
+        grid.appendChild(col);
+      }
+
+      if (restaurants.length > 10) {
+        toggleBtn.style.visibility = 'visible';
+        toggleBtn.textContent = showAll ? 'Show less' : `View all (${restaurants.length})`;
+      } else {
+        toggleBtn.style.visibility = 'hidden';
+      }
+    }
+
+    // Search (debounced)
+    let searchDebounce;
+    searchInput.addEventListener('input', () => {
+      clearTimeout(searchDebounce);
+      searchDebounce = setTimeout(async () => {
+        const q = searchInput.value.trim();
+        const data = await fetchRestaurants(q);
+        allRestaurants = data;
+        showAll = false;
+        render(allRestaurants);
+      }, 250);
+    });
+
+    // Toggle View all
+    toggleBtn.addEventListener('click', () => {
+      showAll = !showAll;
+      render(allRestaurants);
+    });
+
+    // Cart badge
+    async function updateCartCount() {
+      try {
+        const res = await fetch(`${API_BASE}/cart`, { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          const count = Array.isArray(data) ? data.length :
+            Array.isArray(data?.items) ? data.items.length : 0;
+          setCartBadge(count); return;
+        }
+      } catch (e) { }
+      try {
+        const local = JSON.parse(localStorage.getItem('cart') || '[]');
+        setCartBadge(Array.isArray(local) ? local.length : 0);
+      } catch (e) { setCartBadge(0); }
+    }
+    function setCartBadge(n) {
+      if (n > 0) {
+        cartCountEl.textContent = n;
+        cartCountEl.style.display = 'inline-block';
+      } else {
+        cartCountEl.style.display = 'none';
+      }
+    }
+    const authChip = document.getElementById('authChip');
+    const authBtn = document.getElementById('authBtn');
+
+    const LOGOUT_ENDPOINTS = [
+      `${API_BASE}/auth/logout`,
+      `${API_BASE}/logout`,
+      `${API_BASE}/customers/logout`
+    ];
+
+    async function tryLogout() {
+      for (const url of LOGOUT_ENDPOINTS) {
+        try { const r = await fetch(url, { method: 'POST', credentials: 'include' }); if (r.ok || r.status === 204) return true; } catch { }
+      }
+      for (const url of LOGOUT_ENDPOINTS) {
+        try { const r = await fetch(url, { method: 'GET', credentials: 'include' }); if (r.ok || r.status === 204) return true; } catch { }
+      }
+      return false;
+    }
+
+    function setAuthUI(state) {
+      authChip.classList.remove('d-none', 'chip-in', 'chip-out');
+      if (state === 'in') {
+        authChip.textContent = 'Signed in';
+        authChip.classList.add('chip-in');
+        authBtn.textContent = 'Sign out';
+        authBtn.className = 'btn btn-outline-dark btn-sm rounded-pill';
+        authBtn.onclick = async () => { await tryLogout(); window.location.href = '/customer-login.html'; };
+      } else {
+        authChip.textContent = 'Not logged in';
+        authChip.classList.add('chip-out');
+        authBtn.textContent = 'Sign in';
+        authBtn.className = 'btn btn-outline-secondary btn-sm rounded-pill';
+        authBtn.onclick = () => window.location.href = '/customer-login.html';
+      }
+    }
+
+    async function checkAuth() {
+      try {
+        const res = await fetch(`${API_BASE}/cart`, { credentials: 'include' });
+        setAuthUI(res.status === 401 ? 'out' : 'in');
+      } catch {
+        setAuthUI('out');
+      }
+    }
+
+    // Init
+    (async function init() {
+      const data = await fetchRestaurants();
+      allRestaurants = data;
+      render(allRestaurants);
+      updateCartCount();
+      checkAuth();
+    })();
+  </script>
+
+  <!-- SINGLE burger footer -->
+  <footer class="border-top bg-white">
+    <div class="container py-5">
+      <div class="row gy-4">
+        <!-- Left brand block -->
+        <div class="col-12 col-md-4 text-center text-md-start">
+          <a class="navbar-brand d-inline-flex align-items-center gap-2" href="/index.html">
+            <img src="/assets/BiteCodeNOBG.png" alt="BiteCode logo" class="brand-logo">
+          </a>
+          <p class="small text-muted mb-1">
+            © <span id="yearFooter"></span> BiteCode - Because coding’s better with curry 🥘
+          </p>
+          <p class="small text-muted mb-0">
+            Any grievances? Email us at
+            <a href="mailto:bitecodearena@gmail.com" class="link-muted">bitecodearena@gmail.com</a>
+          </p>
+        </div>
+
+        <!-- Middle stacked dashboards -->
+        <div class="col-12 col-md-4 text-center">
+          <h6 class="fw-bold text-uppercase text-muted mb-3">Dashboards</h6>
+          <ul class="list-unstyled small mb-0">
+            <li class="mb-2">
+              <a class="link-muted" href="/customer-login.html">Customer Login</a>
+            </li>
+            <li class="mb-2">
+              <a class="link-muted" href="/driver-login.html">Driver Login</a>
+            </li>
+            <li class="mb-2">
+              <a class="link-muted" href="/restaurant-login.html">Restaurant Login</a>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Right playful links + socials -->
+        <div class="col-12 col-md-4 text-center text-md-end">
+          <h6 class="fw-bold text-uppercase text-muted mb-3">Get Started</h6>
+          <ul class="list-unstyled small mb-4">
+            <li class="mb-2">
+              <a class="link-muted" href="/customer-register.html">New here? Join as a Customer</a>
+            </li>
+            <li class="mb-2">
+              <a class="link-muted" href="/register-driver.html">Want to drive? Partner with us</a>
+            </li>
+            <li class="mb-2">
+              <a class="link-muted" href="/restaurant-register.html">Own a restaurant? Increase your reach 🍽️</a>
+            </li>
+            <li class="mb-2">
+              <a class="link-muted" href="/about.html">About Us</a>
+            </li>
+          </ul>
+
+          <ul class="list-unstyled small mb-0 d-flex justify-content-center justify-content-md-end gap-3">
+            <li>
+              <a class="link-muted" href="https://www.instagram.com/bitecodese2025/" target="_blank" aria-label="Instagram"
+                title="Instagram">
+                <i class="bi bi-instagram fs-4"></i>
+              </a>
+            </li>
+            <!-- <li>
+              <a class="link-muted" href="https://x.com/bitecode" target="_blank" aria-label="Twitter/X"
+                title="Twitter/X">
+                <i class="bi bi-twitter-x fs-4"></i>
+              </a>
+            </li> -->
+            <li>
+              <a class="link-muted" href="https://www.facebook.com/profile.php?id=61583523866090" target="_blank" aria-label="Facebook"
+                title="Facebook">
+                <i class="bi bi-facebook fs-4"></i>
+              </a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </footer>
+</body>
+
+</html>
