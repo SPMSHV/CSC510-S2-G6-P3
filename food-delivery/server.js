@@ -69,6 +69,8 @@ import challengeRoutes from "./routes/challenges.js";
 import couponsRouter from "./routes/coupons.js";
 import chessRoutes from "./routes/chess.js";
 import refundsRouter from "./routes/refunds.js";
+import ratingsRouter from "./routes/ratings.js";
+import analyticsRouter from "./routes/analytics.js";
 
 
 dotenv.config();
@@ -123,6 +125,8 @@ app.use("/api/challenges", challengeRoutes);
 app.use("/api/coupons", couponsRouter);
 app.use("/api/chess", chessRoutes);
 app.use("/api/refunds", refundsRouter);
+app.use("/api/ratings", ratingsRouter);
+app.use("/api/analytics", analyticsRouter);
 
 
 

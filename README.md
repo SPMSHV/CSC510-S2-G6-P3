@@ -1,27 +1,22 @@
 <p align="center">
-  <!-- DOI -->
-  <a href="https://doi.org/10.5281/zenodo.17544828">
-    <img src="https://zenodo.org/badge/DOI/10.5281/zenodo.17544828.svg" alt="DOI" />
+  <!-- Repository -->
+  <a href="https://github.com/SPMSHV/CSC510-S2-G6-P3">
+    <img src="https://img.shields.io/badge/repo-CSC510--S2--G6--P3-blue?logo=github" alt="Repository" />
   </a>
 
-  <!-- Judge CI Status -->
-  <a href="https://github.com/Divyaka9/SE-sec2_g3/actions">
-    <img src="https://github.com/Divyaka9/SE-sec2_g3/actions/workflows/ci.yml/badge.svg" alt="Judge0 Tests" />
+  <!-- Tests -->
+  <a href="https://github.com/SPMSHV/CSC510-S2-G6-P3">
+    <img src="https://img.shields.io/badge/tests-122%20passing-brightgreen" alt="Tests" />
   </a>
 
-  <!-- Food Delivery CI Status -->
-  <a href="https://github.com/Divyaka9/SE-sec2_g3/actions">
-    <img src="https://github.com/Divyaka9/SE-sec2_g3/actions/workflows/test.yml/badge.svg" alt="Food Delivery Tests" />
-  </a>
-
-  <!-- Complete Code Coverage -->
-  <a href="https://codecov.io/gh/Divyaka9/SE-sec2_g3">
-    <img src="https://codecov.io/gh/Divyaka9/SE-sec2_g3/branch/main/graph/badge.svg" />
+  <!-- Milestones -->
+  <a href="https://github.com/SPMSHV/CSC510-S2-G6-P3">
+    <img src="https://img.shields.io/badge/milestones-9%20completed-success" alt="Milestones" />
   </a>
 
   <!-- License -->
 <p align="center">
-  <a href="https://github.com/Divyaka9/SE-sec2_g3/blob/main/LICENSE">
+  <a href="https://github.com/SPMSHV/CSC510-S2-G6-P3/blob/main/LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License" />
   </a>
   <a href="https://prettier.io/">
@@ -69,11 +64,33 @@ It’s where every byte earns you a bite!
 
 BiteCode has been developed as part of CSC510 - Software Engineering project at NC State University to demonstrate the design and implementation of an interactive, dual-purpose web platform.
 
+This repository (proj3) extends the original BiteCode project (proj2) with 9 new milestones, building upon the foundation created by the previous team.
+
+### Previous Work (proj2)
+The original BiteCode project was developed by Team sec2_g3 and included:
+- Complete multi-role food delivery system (customers, restaurants, drivers)
+- Judge0 integration for coding challenges with dynamic rewards
+- Automated coupon application system
+- Role-specific dashboards with responsive design
+- Modular backend architecture with comprehensive testing
+
+### Current Work (proj3)
+This repository extends proj2 with 9 new milestones:
+1. **Adaptive Challenge Difficulty** - Dynamic difficulty adjustment based on user performance
+2. **Chess Engine Integration** - Chess puzzles as alternative to coding challenges
+3. **Geolocation Tracking** - Real-time driver location and ETA calculation
+4. **UI/UX & Stability Enhancements** - Performance optimizations and UI consistency
+5. **Payment & Security Upgrades** - Payment verification, refunds, and audit trails
+6. **Email Notifications** - Order status update emails
+7. **Order Rating System** - Customer ratings and reviews
+8. **Search & Filter Enhancements** - Advanced search for restaurants and menu items
+9. **Analytics Dashboard** - Restaurant and system-wide analytics
+
 It combines two main components:
 
 1. **Food Delivery Application**  
    A full-stack web app built using **MongoDB, Express.js, React, and Node.js (MERN)**.  
-   It enables users to discover restaurants, browse menus, place orders, and participate in timed coding challenges that unlock instant rewards.
+   It enables users to discover restaurants, browse menus, place orders, and participate in timed coding challenges or chess puzzles that unlock instant rewards.
 
 2. **Judge0 Frontend**  
    A React-based interface powered by the open-source **Judge0 API**, used to compile and execute code in real time.  
@@ -121,29 +138,40 @@ It’s not just a project to run — it’s a project you can *grow*, *extend*, 
   - Core edge cases: authentication guards, invalid inputs, runtime/compile errors  
   This extensive coverage ensures stability and a reliable foundation for future enhancements.
 
-### 🧠 Ideas for Future Contributors
-1. **Adaptive Challenge Difficulty:**  
-   Dynamically adjust coding (or chess) challenge difficulty based on a user’s **order frequency, accuracy, or past performance**.
+### ✨ Completed Enhancements (proj3)
+All of the following features have been implemented in this repository:
 
-2. **Chess Engine Integration:**  
-   Hook up your **own chess engine** — share your toughest positions and let users solve puzzles to **earn discounts** on their orders.
+1. **✅ Adaptive Challenge Difficulty:**  
+   Dynamically adjusts coding (or chess) challenge difficulty based on a user's **order frequency, accuracy, and past performance**.
 
-3. **Driver Geolocation Tracking:**  
-   Integrate **Google Maps APIs** to enable live **driver location tracking**, route visualization, and estimated delivery times.
+2. **✅ Chess Engine Integration:**  
+   Integrated chess.js library — users can solve chess puzzles to **earn discounts** on their orders, with puzzles available in easy, medium, and hard difficulties.
 
-4. **UI/UX & Stability Enhancements:**  
-   Improve responsiveness, add dark mode, refine transitions, and enhance dashboard consistency for customers, restaurants, and drivers.
+3. **✅ Driver Geolocation Tracking:**  
+   HTML5 Geolocation API integration enables live **driver location tracking**, ETA calculation, and real-time order tracking.
 
-5. **Payment & Security Upgrades:**  
-   Add features like **payment verification**, **refund management**, secure transaction logs, and **audit trails** for real-world robustness.
+4. **✅ UI/UX & Stability Enhancements:**  
+   Improved responsiveness, performance optimizations, standardized UI components, and enhanced dashboard consistency.
 
-6. **Analytics & Gamification:**  
-   Create dashboards for tracking performance, average delivery time, and challenge completion rates; reward consistent solvers or fast deliveries.
+5. **✅ Payment & Security Upgrades:**  
+   Payment verification, **refund management**, secure transaction logs, and **audit trails** for all critical operations.
+
+6. **✅ Email Notifications:**  
+   Automated email notifications for order confirmations and status updates.
+
+7. **✅ Order Rating System:**  
+   Customer rating and review system with separate food and delivery ratings.
+
+8. **✅ Search & Filter Enhancements:**  
+   Advanced search with filters for restaurants and menu items.
+
+9. **✅ Analytics Dashboard:**  
+   Comprehensive analytics for restaurants and system-wide insights.
 
 ### 📈 Code Quality & Coverage
-- **Extensive Testing:** 161 unit, integration, and end-to-end testcases across Python and JavaScript.  
-- **Continuous Integration:** GitHub Actions CI pipelines automatically run backend + frontend test suites on every commit.  
-- **Structured Documentation:** Each module (models, routes, public JS, and frontend tests) has detailed `.md` documentation to ease onboarding.  
+- **Extensive Testing:** 122 unit, integration, and end-to-end testcases across JavaScript (all passing).  
+- **Backward Compatibility:** All existing functionality from proj2 maintained and tested.  
+- **Structured Documentation:** Each module (models, routes, utilities, and frontend tests) has detailed documentation.  
 - **Clear Contribution Path:** Well-defined `CODE_OF_CONDUCT.md` and `CONTRIBUTING.md` files guide newcomers through setup and best practices.
 
 ---
@@ -198,8 +226,8 @@ proj2/
 
 ### 1️⃣ Clone the repository
 ```bash
-git clone https://github.com/yourusername/proj2.git
-cd proj2
+git clone https://github.com/SPMSHV/CSC510-S2-G6-P3.git
+cd CSC510-S2-G6-P3
 ```
 
 ### 2️⃣ Setup the Food Delivery App
@@ -288,12 +316,25 @@ The name is unique, created specifically for this project, and free from any kno
 
 ## 🧑‍🤝‍🧑 Contributors
 
-| Name | Email id  |
-|------| ----------|
+### Previous Contributors (proj2 - Original BiteCode)
+The original BiteCode project was developed by:
+
+| Name | Email |
+|------|-------|
 | Soham Sarang Deshpande | sdeshpa5@ncsu.edu |
 | Divya Kannan | dkannan2@ncsu.edu |
 | Tejas Pavular Ramesh | tpavula@ncsu.edu |
 | Mahek Kantharia | mrkantha@ncsu.edu |
+
+### Current Contributors (proj3 - Milestones Extension)
+This repository extends proj2 with 9 new milestones, implemented by:
+
+| Name | Email |
+|------|-------|
+| Pranshav Gajjar | prgajjar@ncsu.edu |
+| Ishan Patel | ispatel@ncsu.edu |
+| Aniruddh Sanjeev Bhagwat | abhagwa2@ncsu.edu |
+| Hardik Hiren Majethia | hmajeth@ncsu.edu |
 
 ---
 
@@ -354,15 +395,54 @@ The name is unique, created specifically for this project, and free from any kno
   - Restaurant admin approval workflow for refunds
   - All sensitive data (passwords, tokens, card numbers) automatically sanitized before logging
 
+#### 6. Email Notifications ✅
+- **Implemented**: Automated email notifications for order updates
+- **Features**:
+  - Order confirmation emails when order is placed
+  - Status update emails (preparing, ready_for_pickup, out_for_delivery)
+  - Delivery confirmation emails
+  - Mock implementation ready for production integration (SendGrid, AWS SES, Nodemailer)
+  - Non-blocking email service (failures don't affect order processing)
+
+#### 7. Order Rating System ✅
+- **Implemented**: Customer rating and review system
+- **Features**:
+  - Overall rating (1-5 stars) for orders
+  - Separate food rating and delivery rating (optional)
+  - Comment/review text (optional, max 500 chars)
+  - Automatic restaurant average rating calculation
+  - Real-time rating updates
+  - One rating per order (prevents duplicates)
+
+#### 8. Search & Filter Enhancements ✅
+- **Implemented**: Advanced search and filtering for restaurants and menu items
+- **Features**:
+  - Text search in restaurant name and cuisine
+  - Filter by cuisine type
+  - Minimum rating filter
+  - Sort by rating, name, delivery fee, or ETA
+  - Menu item search across restaurants
+  - Price range filtering for menu items
+
+#### 9. Analytics Dashboard ✅
+- **Implemented**: Comprehensive analytics for restaurants and system
+- **Features**:
+  - Restaurant-specific analytics (orders, revenue, popular items)
+  - System-wide dashboard (total restaurants, orders, revenue)
+  - Orders by status breakdown
+  - Top restaurants by revenue
+  - Date range filtering
+  - Popular menu items tracking
+
 ---
 
 ## 🏁 Future Enhancements
 
 - Unified login system for both modules (SSO)  
 - Mobile-friendly PWA version
-- Advanced analytics dashboard
-- Real-time notifications
-- Multi-language support  
+- Real-time push notifications
+- Multi-language support
+- Advanced machine learning for recommendation system  
 
 ---
 

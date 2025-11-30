@@ -24,6 +24,66 @@ This release implements all 5 future milestones for the BiteCode platform, exten
 
 ## [Unreleased]
 
+### Milestone 6: Email Notifications ✅
+- **Status: Completed**
+- Created `emailService.js` utility for sending email notifications
+- Integrated email notifications for order status updates:
+  - Order confirmation emails when order is placed
+  - Status update emails when restaurant updates order status (preparing, ready_for_pickup, out_for_delivery)
+  - Delivery confirmation emails when order is delivered
+- Mock implementation ready for production integration (SendGrid, AWS SES, Nodemailer)
+- Email notifications are non-blocking (failures don't affect order processing)
+- Added email service to `restaurantDashboard.js`, `driverDashboard.js`, and `orders.js` routes
+
+### Milestone 7: Order Rating System ✅
+- **Status: Completed**
+- Created `OrderRating` model to store customer ratings for orders
+- Implemented rating routes:
+  - `POST /api/ratings` - Submit a rating for a delivered order
+  - `GET /api/ratings/order/:orderId` - Get rating for a specific order
+  - `GET /api/ratings/restaurant/:restaurantId` - Get all ratings for a restaurant
+- Features:
+  - Overall rating (1-5 stars)
+  - Separate food rating and delivery rating (optional)
+  - Comment/review text (optional, max 500 chars)
+  - Automatic restaurant average rating calculation
+  - Restaurant ratings updated in real-time
+  - Only delivered orders can be rated
+  - One rating per order (prevents duplicate ratings)
+
+### Milestone 8: Search & Filter Enhancements ✅
+- **Status: Completed**
+- Enhanced restaurant search with multiple filters:
+  - Text search in restaurant name and cuisine
+  - Cuisine filter (e.g., "italian", "chinese")
+  - Minimum rating filter
+  - Sort by: rating, name, delivery fee, or ETA
+- New menu item search endpoint:
+  - `GET /api/restaurants/search/menu` - Search menu items across restaurants
+  - Filter by restaurant, price range (min/max)
+  - Returns menu items with restaurant details
+  - Results limited to 50 items for performance
+- Improved search performance with indexed queries
+
+### Milestone 9: Analytics Dashboard ✅
+- **Status: Completed**
+- Created analytics routes for restaurant and system-wide insights:
+  - `GET /api/analytics/restaurant/:restaurantId` - Restaurant-specific analytics
+  - `GET /api/analytics/dashboard` - Overall system analytics (admin view)
+- Restaurant Analytics Features:
+  - Total orders and revenue
+  - Average order value
+  - Orders by status breakdown
+  - Popular menu items (top 10 by quantity and revenue)
+  - Average rating and total ratings
+  - Date range filtering (startDate, endDate)
+- System Dashboard Features:
+  - Total restaurants, orders, and revenue
+  - Orders by status breakdown
+  - Top 5 restaurants by revenue
+  - Order count per restaurant
+- All analytics use MongoDB aggregation pipelines for efficient data processing
+
 ### Milestone 1: Adaptive Challenge Difficulty ✅
 - **Status: Completed**
 - Created `UserPerformance` model to track user metrics (order frequency, challenge completion rate, average solve time)

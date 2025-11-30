@@ -6,6 +6,8 @@ import { fileURLToPath } from "url";
 import MenuItem from "../models/MenuItem.js";
 import Order from "../models/Order.js";
 import Restaurant from "../models/Restaurant.js";
+import CustomerAuth from "../models/CustomerAuth.js";
+import { sendOrderStatusEmail } from "../utils/emailService.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -226,9 +228,25 @@ router.patch("/orders/:id/status", requireRestaurant, async (req, res) => {
       return res.status(403).json({ error: "Unauthorized status update" });
     }
 
-    const updated = await Order.findByIdAndUpdate(id, { status }, { new: true });
+    const updated = await Order.findByIdAndUpdate(id, { status }, { new: true })
+      .populate('userId', 'email');
     if (!updated) {
       return res.status(404).json({ error: "Order not found" });
+    }
+
+    // 📧 EMAIL: Send notification to customer
+    if (updated.userId?.email) {
+      try {
+        await sendOrderStatusEmail(
+          updated.userId.email,
+          updated._id.toString(),
+          status,
+          { total: updated.total }
+        );
+      } catch (emailErr) {
+        console.error("Email notification error:", emailErr);
+        // Don't fail the request if email fails
+      }
     }
 
     res.status(200).json(updated);

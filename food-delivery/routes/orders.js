@@ -9,6 +9,7 @@ import Coupon from "../models/Coupon.js";
 import Driver from "../models/Driver.js";
 import CustomerAuth from "../models/CustomerAuth.js";
 import { calculateETA, formatETA } from "../utils/etaCalculator.js";
+import { sendOrderConfirmationEmail } from "../utils/emailService.js";
 
 const router = express.Router();
 
@@ -189,6 +190,21 @@ router.post("/", async (req, res) => {
       await CartItem.deleteMany({ userId: customerId, _id: { $in: itemIds } });
     } else {
       await CartItem.deleteMany({ userId: customerId });
+    }
+
+    // 📧 EMAIL: Send order confirmation
+    const customer = await CustomerAuth.findById(customerId);
+    if (customer?.email) {
+      try {
+        await sendOrderConfirmationEmail(
+          customer.email,
+          order._id.toString(),
+          { total: order.total, items: items.length }
+        );
+      } catch (emailErr) {
+        console.error("Email confirmation error:", emailErr);
+        // Don't fail the request if email fails
+      }
     }
 
     return res.status(201).json(order);

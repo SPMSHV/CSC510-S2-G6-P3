@@ -2,6 +2,8 @@ import express from 'express';
 import Order from '../models/Order.js';
 import Driver from '../models/Driver.js';
 import ChallengeSession from "../models/ChallengeSession.js";
+import CustomerAuth from "../models/CustomerAuth.js";
+import { sendOrderStatusEmail } from "../utils/emailService.js";
 const router = express.Router();
 
 // PATCH /api/driver/active
@@ -165,6 +167,22 @@ router.post('/orders/delivered/:id', async (req, res) => {
       { orderId: order._id, status: "ACTIVE" },
       { $set: { status: "EXPIRED", expiresAt: new Date() } }
     );
+
+    // 📧 EMAIL: Send delivery notification to customer
+    const customer = await CustomerAuth.findById(order.userId);
+    if (customer?.email) {
+      try {
+        await sendOrderStatusEmail(
+          customer.email,
+          order._id.toString(),
+          'delivered',
+          { total: order.total }
+        );
+      } catch (emailErr) {
+        console.error("Email notification error:", emailErr);
+        // Don't fail the request if email fails
+      }
+    }
 
     console.log(`✅ Order ${order._id} marked delivered by driver ${driverId}`);
     res.json({ ok: true, message: 'Order marked as delivered', order });
