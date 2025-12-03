@@ -18,14 +18,30 @@ router.get("/puzzle/:difficulty", async (req, res) => {
       return res.status(400).json({ error: "Invalid difficulty. Must be easy, medium, or hard" });
     }
 
-    // Get a random puzzle of the specified difficulty
-    const puzzles = await ChessPuzzle.find({ difficulty });
+    // Query puzzles with solution moves at database level
+    const puzzles = await ChessPuzzle.find({ 
+      difficulty,
+      solutionMoves: { $exists: true, $type: "array" }
+    });
     
-    if (puzzles.length === 0) {
-      return res.status(404).json({ error: `No puzzles found for difficulty: ${difficulty}` });
+    // Filter to only include puzzles with non-empty solutionMoves
+    const validPuzzles = puzzles.filter(puzzle => {
+      return puzzle.solutionMoves && 
+             Array.isArray(puzzle.solutionMoves) && 
+             puzzle.solutionMoves.length > 0;
+    });
+    
+    if (validPuzzles.length === 0) {
+      return res.status(404).json({ error: `No puzzles with solutions found for difficulty: ${difficulty}` });
     }
 
-    const randomPuzzle = puzzles[Math.floor(Math.random() * puzzles.length)];
+    const randomPuzzle = validPuzzles[Math.floor(Math.random() * validPuzzles.length)];
+    
+    // Double-check that solutionMoves exist before returning
+    if (!randomPuzzle.solutionMoves || !Array.isArray(randomPuzzle.solutionMoves) || randomPuzzle.solutionMoves.length === 0) {
+      console.error(`ERROR: Selected puzzle ${randomPuzzle._id} has no solution moves!`);
+      return res.status(500).json({ error: "Internal error: selected puzzle has no solution" });
+    }
     
     res.json({
       puzzleId: randomPuzzle._id,
@@ -33,7 +49,8 @@ router.get("/puzzle/:difficulty", async (req, res) => {
       hint: randomPuzzle.hint,
       description: randomPuzzle.description,
       puzzleType: randomPuzzle.puzzleType,
-      difficulty: randomPuzzle.difficulty
+      difficulty: randomPuzzle.difficulty,
+      solutionMoves: randomPuzzle.solutionMoves // Include solution moves
     });
   } catch (err) {
     console.error("Error fetching chess puzzle:", err);
@@ -54,6 +71,11 @@ router.post("/verify", async (req, res) => {
       return res.status(400).json({ error: "puzzleId and moves array are required" });
     }
 
+    // Validate puzzleId format (MongoDB ObjectId is 24 hex characters)
+    if (typeof puzzleId !== 'string' || !puzzleId.match(/^[0-9a-fA-F]{24}$/)) {
+      return res.status(400).json({ error: "Invalid puzzleId format" });
+    }
+
     const puzzle = await ChessPuzzle.findById(puzzleId);
     if (!puzzle) {
       return res.status(404).json({ error: "Puzzle not found" });
@@ -67,48 +89,99 @@ router.post("/verify", async (req, res) => {
       for (const move of moves) {
         const result = chess.move(move);
         if (!result) {
+          // Don't expose technical details - just indicate move doesn't match solution
           return res.json({
             solved: false,
-            message: `Invalid move: ${move}`,
+            message: "Move doesn't match the solution",
             validMoves: chess.moves()
           });
         }
       }
     } catch (err) {
+      // Don't expose technical error messages
       return res.json({
         solved: false,
-        message: `Error applying moves: ${err.message}`,
+        message: "Move doesn't match the solution",
         validMoves: chess.moves()
       });
     }
 
     // Check if the puzzle is solved
-    // For checkmate puzzles, check if the game is in checkmate
-    // For tactical puzzles, check if the solution moves match
+    // For checkmate puzzles, check if the game is in checkmate AND moves match solution length
+    // For tactical puzzles, check if moves match solution exactly
     let solved = false;
     let message = "";
 
+    // Check if user has made the correct number of moves
+    const expectedMoves = puzzle.solutionMoves.length;
+    const actualMoves = moves.length;
+
     if (puzzle.puzzleType === "checkmate") {
-      solved = chess.isCheckmate();
-      if (solved) {
-        message = "Checkmate! Puzzle solved correctly!";
-      } else {
-        message = "Not checkmate yet. Keep trying!";
-      }
-    } else {
-      // For other puzzle types, check if moves match solution
-      // Allow for different move orders or alternative solutions
+      // For checkmate puzzles, must reach checkmate AND use correct number of moves
+      // Also verify that the moves match the solution (or reach the same position)
+      const isCheckmate = chess.isCheckmate();
+      const correctMoveCount = actualMoves === expectedMoves;
+      
+      // Verify moves match solution by comparing final positions
       const solutionFen = new Chess(puzzle.fen);
       for (const move of puzzle.solutionMoves) {
-        solutionFen.move(move);
+        const result = solutionFen.move(move);
+        if (!result) {
+          console.error(`Invalid solution move in puzzle: ${move}`);
+          break;
+        }
       }
       
-      // Check if current position matches solution position
-      if (chess.fen() === solutionFen.fen()) {
+      // Compare positions (normalize FEN to ignore move counters and en passant)
+      const currentFenNormalized = chess.fen().split(' ').slice(0, 4).join(' ');
+      const solutionFenNormalized = solutionFen.fen().split(' ').slice(0, 4).join(' ');
+      const movesMatch = currentFenNormalized === solutionFenNormalized;
+      
+      if (isCheckmate && correctMoveCount && movesMatch) {
         solved = true;
-        message = "Puzzle solved correctly!";
+        message = `Checkmate! Puzzle solved correctly in ${expectedMoves} move${expectedMoves > 1 ? 's' : ''}!`;
+      } else if (isCheckmate && !correctMoveCount) {
+        solved = false;
+        message = `Checkmate achieved, but used ${actualMoves} moves instead of ${expectedMoves}. Try again!`;
+      } else if (isCheckmate && correctMoveCount && !movesMatch) {
+        solved = false;
+        message = `Checkmate achieved, but moves don't match the solution. Try the correct sequence!`;
+      } else if (!isCheckmate && correctMoveCount) {
+        solved = false;
+        message = `Made ${expectedMoves} move${expectedMoves > 1 ? 's' : ''}, but not checkmate yet. Keep trying!`;
       } else {
-        message = "Moves don't match the solution. Try again!";
+        solved = false;
+        message = `Not checkmate yet. Need ${expectedMoves} move${expectedMoves > 1 ? 's' : ''} to solve.`;
+      }
+    } else {
+      // For tactical puzzles, check if moves match solution exactly
+      // First check if move count matches
+      if (actualMoves !== expectedMoves) {
+        solved = false;
+        message = `Made ${actualMoves} move${actualMoves > 1 ? 's' : ''}, but need ${expectedMoves} move${expectedMoves > 1 ? 's' : ''} to solve.`;
+      } else {
+        // Check if the final position matches the solution
+        const solutionFen = new Chess(puzzle.fen);
+        for (const move of puzzle.solutionMoves) {
+          const result = solutionFen.move(move);
+          if (!result) {
+            // Invalid solution move in puzzle data
+            console.error(`Invalid solution move in puzzle: ${move}`);
+            break;
+          }
+        }
+        
+        // Compare positions (normalize FEN to ignore move counters)
+        const currentFenNormalized = chess.fen().split(' ').slice(0, 4).join(' ');
+        const solutionFenNormalized = solutionFen.fen().split(' ').slice(0, 4).join(' ');
+        
+        if (currentFenNormalized === solutionFenNormalized) {
+          solved = true;
+          message = "Puzzle solved correctly!";
+        } else {
+          solved = false;
+          message = "Moves don't match the solution. Try again!";
+        }
       }
     }
 

@@ -32,13 +32,36 @@ router.post("/start", async (req, res) => {
     if (challengeType === "chess") {
       // Import chess routes functionality
       const ChessPuzzle = (await import("../models/ChessPuzzle.js")).default;
-      const puzzles = await ChessPuzzle.find({ difficulty: finalDifficulty });
+      const INITIAL_FEN_POSITION = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
       
-      if (puzzles.length === 0) {
-        return res.status(404).json({ error: `No chess puzzles found for difficulty: ${finalDifficulty}` });
+      // Query puzzles with solution moves at database level
+      // MongoDB query: solutionMoves exists and is an array
+      const puzzles = await ChessPuzzle.find({ 
+        difficulty: finalDifficulty,
+        solutionMoves: { $exists: true, $type: "array" }
+      });
+      
+      // Filter to only include puzzles with non-empty solutionMoves and valid FEN
+      const validPuzzles = puzzles.filter(puzzle => {
+        const hasValidSolutionMoves = puzzle.solutionMoves && 
+                                       Array.isArray(puzzle.solutionMoves) && 
+                                       puzzle.solutionMoves.length > 0;
+        const fenPosition = puzzle.fen?.split(' ')[0];
+        const hasValidFen = fenPosition !== INITIAL_FEN_POSITION && puzzle.fen && puzzle.fen.trim();
+        return hasValidSolutionMoves && hasValidFen;
+      });
+      
+      if (validPuzzles.length === 0) {
+        return res.status(404).json({ error: `No valid chess puzzles with solutions found for difficulty: ${finalDifficulty}` });
       }
       
-      const randomPuzzle = puzzles[Math.floor(Math.random() * puzzles.length)];
+      const randomPuzzle = validPuzzles[Math.floor(Math.random() * validPuzzles.length)];
+      
+      // Final validation - ensure solution moves exist
+      if (!randomPuzzle.solutionMoves || !Array.isArray(randomPuzzle.solutionMoves) || randomPuzzle.solutionMoves.length === 0) {
+        console.error(`ERROR: Selected puzzle ${randomPuzzle._id} has no solution moves despite filtering!`);
+        return res.status(500).json({ error: "Internal error: selected puzzle has no solution" });
+      }
       
       // Create challenge session for chess
       const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2 hours
@@ -72,7 +95,9 @@ router.post("/start", async (req, res) => {
         fen: randomPuzzle.fen,
         hint: randomPuzzle.hint,
         description: randomPuzzle.description,
-        difficulty: finalDifficulty
+        puzzleType: randomPuzzle.puzzleType,
+        difficulty: finalDifficulty,
+        solutionMoves: randomPuzzle.solutionMoves // CRITICAL: Always include solution moves
       });
     }
 
@@ -110,7 +135,7 @@ router.get("/session", async (req, res) => {
     const sess = await ChallengeSession.findById(payload.sid);
     if (!sess) return res.status(404).json({ error: "Session not found" });
 
-    // 🔴 NEW: if the linked order is delivered, expire the session immediately
+    // 🔴 Check if the linked order is delivered - only expire if actually delivered
     const order = await Order.findById(sess.orderId);
     if (order?.status === "delivered") {
       if (sess.status === "ACTIVE") {
@@ -120,16 +145,64 @@ router.get("/session", async (req, res) => {
       }
       return res.status(410).json({ error: "Session expired (order delivered)" });
     }
-
-    if (sess.status !== "ACTIVE" || sess.expiresAt <= new Date())
+    // Note: Order can be "out_for_delivery" or "ready_for_pickup" - challenge is still valid
+    
+    // If session expired but order not delivered, extend it instead of rejecting
+    if (sess.status !== "ACTIVE" && order && order.status !== "delivered") {
+      sess.status = "ACTIVE";
+      sess.expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 more minutes
+      await sess.save();
+    }
+    
+    if (sess.expiresAt <= new Date() && order && order.status !== "delivered") {
+      // Extend expiration if order is still in transit
+      sess.expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 more minutes
+      await sess.save();
+    }
+    
+    // Only reject if session is expired AND order is delivered
+    if (sess.status !== "ACTIVE" || (sess.expiresAt <= new Date() && order?.status === "delivered")) {
       return res.status(410).json({ error: "Session expired" });
+    }
 
     // 🎯 CHESS SUPPORT: If it's a chess challenge, return puzzle data
     if (sess.challengeType === "chess" && sess.puzzleId) {
       const ChessPuzzle = (await import("../models/ChessPuzzle.js")).default;
       const puzzle = await ChessPuzzle.findById(sess.puzzleId);
       if (puzzle) {
-        return res.json({
+        // Validate FEN is not the initial position
+        const INITIAL_FEN_POSITION = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
+        const puzzleFenPosition = puzzle.fen.split(' ')[0]; // Get just the position part
+        
+        if (puzzleFenPosition === INITIAL_FEN_POSITION) {
+          console.error(`ERROR: Puzzle ${puzzle._id} has initial position FEN! This should not happen.`);
+          return res.status(500).json({ 
+            error: "Invalid puzzle: puzzle position cannot be the initial chess position. Please contact support." 
+          });
+        }
+        
+        if (!puzzle.fen || !puzzle.fen.trim()) {
+          console.error(`ERROR: Puzzle ${puzzle._id} has empty or invalid FEN!`);
+          return res.status(500).json({ 
+            error: "Invalid puzzle: missing position data. Please contact support." 
+          });
+        }
+        
+        // Validate that solution moves exist
+        if (!puzzle.solutionMoves || !Array.isArray(puzzle.solutionMoves) || puzzle.solutionMoves.length === 0) {
+          console.error(`ERROR: Puzzle ${puzzle._id} has no solution moves!`);
+          return res.status(500).json({ 
+            error: "Invalid puzzle: missing solution data. Please contact support." 
+          });
+        }
+        
+        // Log what we're about to send
+        console.log(`✅ Puzzle ${puzzle._id} has solutionMoves:`, puzzle.solutionMoves);
+        console.log(`✅ solutionMoves type:`, typeof puzzle.solutionMoves);
+        console.log(`✅ solutionMoves isArray:`, Array.isArray(puzzle.solutionMoves));
+        console.log(`✅ solutionMoves length:`, puzzle.solutionMoves.length);
+        
+        const responseData = {
           userId: String(sess.userId),
           orderId: String(sess.orderId),
           difficulty: sess.difficulty,
@@ -139,8 +212,17 @@ router.get("/session", async (req, res) => {
           fen: puzzle.fen,
           hint: puzzle.hint,
           description: puzzle.description,
-          puzzleType: puzzle.puzzleType
-        });
+          puzzleType: puzzle.puzzleType,
+          solutionMoves: puzzle.solutionMoves // Include solution moves for frontend validation
+        };
+        
+        console.log(`✅ Sending response with solutionMoves:`, responseData.solutionMoves);
+        console.log(`✅ Full response data:`, JSON.stringify(responseData, null, 2));
+        
+        return res.json(responseData);
+      } else {
+        console.error(`ERROR: Puzzle ${sess.puzzleId} not found in database!`);
+        return res.status(404).json({ error: "Puzzle not found" });
       }
     }
 
@@ -167,8 +249,40 @@ router.post("/complete", async (req, res) => {
     const payload = jwt.verify(token, CHALLENGE_JWT_SECRET);
     const sess = await ChallengeSession.findById(payload.sid);
     if (!sess) return res.status(404).json({ error: "Session not found" });
-    if (sess.status !== "ACTIVE" || sess.expiresAt <= new Date())
-      return res.status(410).json({ error: "Too late — delivery completed" });
+    
+    // 🔑 KEY FIX: Check order status FIRST - challenge is valid until order is delivered
+    // This allows users to complete challenges even if driver has arrived at restaurant
+    // (order status: "out_for_delivery" or "ready_for_pickup" are still valid)
+    const order = await Order.findById(sess.orderId);
+    if (order?.status === "delivered") {
+      // Order is delivered - too late to complete challenge
+      if (sess.status === "ACTIVE") {
+        sess.status = "EXPIRED";
+        sess.expiresAt = new Date();
+        await sess.save();
+      }
+      return res.status(410).json({ error: "Too late — order has been delivered" });
+    }
+    
+    // If order is NOT delivered, allow challenge completion
+    // Reactivate session if it was expired but order is still valid
+    if (sess.status !== "ACTIVE" && order && order.status !== "delivered") {
+      sess.status = "ACTIVE";
+      // Extend expiration to allow completion
+      sess.expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 more minutes
+      await sess.save();
+    }
+    
+    // If session expired but order not delivered, extend it
+    if (sess.expiresAt <= new Date() && order && order.status !== "delivered") {
+      sess.expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 more minutes
+      await sess.save();
+    }
+    
+    // Final check: if session is still not ACTIVE after reactivation attempt, reject
+    if (sess.status !== "ACTIVE") {
+      return res.status(410).json({ error: "Session expired" });
+    }
 
     const reward = rewardMap[sess.difficulty] || rewardMap.easy;
     const code = "FOOD-" + Math.random().toString(36).toUpperCase().slice(2, 8);
@@ -214,8 +328,17 @@ router.post("/complete", async (req, res) => {
 
     res.json({ code, label: reward.label, discountPct: reward.discountPct });
   } catch (err) {
+    console.error("Challenge complete error:", err);
+    // Provide more specific error messages
+    if (err?.name === "TokenExpiredError") {
+      return res.status(410).json({ error: "Challenge session expired. Too late — delivery completed." });
+    }
+    if (err?.name === "JsonWebTokenError" || err?.name === "NotBeforeError") {
+      return res.status(401).json({ error: "Invalid challenge token. Please start a new challenge." });
+    }
+    // For other errors, return 401 with the actual error message for debugging
     const code = err?.name === "TokenExpiredError" ? 410 : 401;
-    res.status(code).json({ error: "Invalid or expired token" });
+    res.status(code).json({ error: err.message || "Invalid or expired token" });
   }
 });
 
