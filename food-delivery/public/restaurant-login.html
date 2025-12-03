@@ -243,19 +243,45 @@
         const res = await fetch(`${API_BASE}/restaurant-auth/login`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "include", // Required for session cookies
           body: JSON.stringify({ email, password })
         });
-        const data = await res.json();
-        if (!res.ok) {
-          return showAlert("danger", data.error || "Login failed.");
+        
+        // Parse response (handle servers that send no JSON on error)
+        let data = {};
+        try { 
+          data = await res.json(); 
+        } catch (parseErr) {
+          console.error("Failed to parse response:", parseErr);
+          if (res.status === 0) {
+            showAlert("danger", `Cannot connect to server. Make sure the backend is running on ${API_BASE.replace('/api', '')}`);
+            return;
+          }
         }
+        
+        if (!res.ok) {
+          const serverMsg = data?.error || data?.message;
+          if (serverMsg) {
+            showAlert("danger", serverMsg);
+          } else if (res.status === 401) {
+            showAlert("danger", "Invalid email or password.");
+          } else if (res.status === 400) {
+            showAlert("warning", data?.error || "Please provide both email and password.");
+          } else if (res.status === 500) {
+            showAlert("danger", data?.error || "Server error. Please try again later.");
+          } else {
+            showAlert("danger", `Login failed (${res.status}). Please check your credentials.`);
+          }
+          return;
+        }
+        
         showAlert("success", data.message || "Login successful!");
         setTimeout(() => {
           location.href = "/restaurant-dashboard.html";
         }, 900);
       } catch (err) {
-        console.error(err);
-        showAlert("danger", "Network error. Please try again.");
+        console.error("Login error:", err);
+        showAlert("danger", err.message || "Network error. Please check if the backend server is running.");
       }
     });
   </script>
