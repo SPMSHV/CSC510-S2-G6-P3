@@ -160,7 +160,8 @@ router.post("/", async (req, res) => {
       if (coupons.length) {
         coupons.sort((a, b) => (b.discountPct || 0) - (a.discountPct || 0));
         const best = coupons[0];
-        discount = Math.round(subtotal * (best.discountPct / 100));
+        // Calculate discount with proper decimal precision (round to 2 decimal places)
+        discount = Math.round((subtotal * (best.discountPct / 100)) * 100) / 100;
         appliedCode = best.code;
         best.applied = true;
         await best.save();
@@ -171,6 +172,21 @@ router.post("/", async (req, res) => {
 
     const total = subtotal + deliveryFee - discount;
 
+    // Get delivery address from request body (if provided) or use customer's default address
+    const { deliveryAddress } = req.body || {};
+    let deliveryLocation = deliveryAddress?.trim();
+    
+    // If no delivery address provided, try to use customer's registered address as fallback
+    if (!deliveryLocation) {
+      const customer = await CustomerAuth.findById(customerId).lean();
+      deliveryLocation = customer?.address || null;
+    }
+    
+    // If still no address, return error (delivery address is required)
+    if (!deliveryLocation) {
+      return res.status(400).json({ error: "Delivery address is required. Please provide a delivery address when placing your order." });
+    }
+
     // ✅ Create order document
     const order = await Order.create({
       userId: customerId,
@@ -180,6 +196,7 @@ router.post("/", async (req, res) => {
       deliveryFee,
       discount,
       appliedCode,
+      deliveryLocation, // Store customer's delivery address
       total,
       status: "placed",
       paymentStatus: "paid",
@@ -272,36 +289,53 @@ router.get("/:id/tracking", async (req, res) => {
     let driverLocation = null;
     let eta = null;
     let etaFormatted = "Not available";
+    let driverName = null;
+    let lastLocationUpdate = null;
 
     if (order.driverId) {
-      const driver = await Driver.findById(order.driverId._id || order.driverId);
-      if (driver && driver.currentLocation) {
-        driverLocation = driver.currentLocation;
+      // Get the driver ID (handle both populated and non-populated cases)
+      const driverIdValue = order.driverId._id || order.driverId;
+      const driver = await Driver.findById(driverIdValue).lean();
+      
+      if (driver) {
+        driverName = driver.fullName;
+        lastLocationUpdate = driver.lastLocationUpdate;
         
-        // Get customer location (try to parse from address or use deliveryLocation)
-        let customerLocation = null;
-        if (order.userId && order.userId.address) {
-          // For now, we'll use a default location or try to geocode
-          // In a real implementation, you'd geocode the address
-          customerLocation = order.deliveryLocation || order.userId.address;
-        }
+        if (driver.currentLocation) {
+          driverLocation = driver.currentLocation;
+          
+          // Get customer location (try to parse from address or use deliveryLocation)
+          let customerLocation = null;
+          if (order.userId && order.userId.address) {
+            // For now, we'll use a default location or try to geocode
+            // In a real implementation, you'd geocode the address
+            customerLocation = order.deliveryLocation || order.userId.address;
+          }
 
-        // Calculate ETA
-        if (customerLocation && typeof customerLocation === 'object') {
-          eta = calculateETA(driverLocation, customerLocation);
-          etaFormatted = formatETA(eta);
-        } else {
-          // If customer location is a string, use default estimate
-          eta = 15; // Default 15 minutes
-          etaFormatted = formatETA(eta);
-        }
+          // Calculate ETA
+          if (customerLocation && typeof customerLocation === 'object' && customerLocation.lat && customerLocation.lng) {
+            eta = calculateETA(driverLocation, customerLocation);
+            etaFormatted = formatETA(eta);
+          } else {
+            // If customer location is a string, use default estimate based on order status
+            // More accurate defaults based on status
+            if (order.status === 'ready_for_pickup') {
+              eta = 20; // Driver needs to pick up first
+            } else if (order.status === 'out_for_delivery') {
+              eta = 15; // Already picked up, on the way
+            } else {
+              eta = 25; // Still preparing
+            }
+            etaFormatted = formatETA(eta);
+          }
 
-        // Update estimated delivery time in order
-        if (eta) {
-          const estimatedTime = new Date(Date.now() + eta * 60 * 1000);
-          await Order.findByIdAndUpdate(id, {
-            $set: { estimatedDeliveryTime: estimatedTime }
-          });
+          // Update estimated delivery time in order
+          if (eta) {
+            const estimatedTime = new Date(Date.now() + eta * 60 * 1000);
+            await Order.findByIdAndUpdate(id, {
+              $set: { estimatedDeliveryTime: estimatedTime }
+            });
+          }
         }
       }
     }
@@ -310,9 +344,10 @@ router.get("/:id/tracking", async (req, res) => {
       orderId: order._id,
       status: order.status,
       driver: order.driverId ? {
-        name: order.driverId.fullName,
+        name: driverName || (order.driverId.fullName || 'Driver'),
         location: driverLocation,
-        lastUpdate: order.driverId.lastLocationUpdate
+        lastUpdate: lastLocationUpdate,
+        hasLocation: !!driverLocation
       } : null,
       customer: {
         address: order.userId?.address || order.deliveryLocation
@@ -324,7 +359,12 @@ router.get("/:id/tracking", async (req, res) => {
       eta: eta,
       etaFormatted: etaFormatted,
       estimatedDeliveryTime: order.estimatedDeliveryTime,
-      locationHistory: order.driverLocationHistory || []
+      locationHistory: order.driverLocationHistory || [],
+      message: !order.driverId 
+        ? "No driver assigned yet. Tracking will be available once a driver accepts your order."
+        : !driverLocation 
+        ? "Driver location not available. Make sure the driver is online and has shared their location."
+        : null
     });
   } catch (err) {
     console.error("Error fetching order tracking:", err);

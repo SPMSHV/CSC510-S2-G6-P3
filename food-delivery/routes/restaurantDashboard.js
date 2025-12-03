@@ -113,6 +113,7 @@ router.get("/data", requireRestaurant, async (req, res) => {
 
     res.json({
       ok: true,
+      restaurantId: restaurantId.toString(),
       restaurantName: req.session.restaurantName || "Restaurant",
       restaurantImageUrl: restaurant?.imageUrl || null,
       menuItems,

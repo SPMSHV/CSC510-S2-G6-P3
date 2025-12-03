@@ -268,6 +268,13 @@ describe("Adaptive Challenge Difficulty", () => {
           address: "123 Test St"
         });
 
+      // Login to establish session
+      await agent.post("/api/customer-auth/login")
+        .send({
+          email: "perf@test.com",
+          password: "password123"
+        });
+
       const user = await CustomerAuth.findOne({ email: "perf@test.com" });
       const restaurantId = new mongoose.Types.ObjectId();
 
@@ -280,29 +287,36 @@ describe("Adaptive Challenge Difficulty", () => {
         status: "placed"
       });
 
-      // Create a challenge session
-      const session = await ChallengeSession.create({
-        userId: user._id,
-        orderId: order._id,
-        difficulty: "easy",
-        status: "ACTIVE",
-        expiresAt: new Date(Date.now() + 1000000)
-      });
+      // Create a challenge session using the /start endpoint to get a valid token
+      const startRes = await agent.post("/api/challenges/start")
+        .send({
+          orderId: order._id.toString(),
+          difficulty: "easy"
+        });
+      
+      if (startRes.status !== 200) {
+        throw new Error(`Failed to start challenge: ${startRes.status} ${JSON.stringify(startRes.body)}`);
+      }
 
-      const token = jwt.sign(
-        {
-          sid: session._id.toString(),
-          uid: String(user._id),
-          oid: String(order._id),
-          diff: "easy",
-          exp: Math.floor((Date.now() + 1000000) / 1000)
-        },
-        process.env.CHALLENGE_JWT_SECRET || "dev-challenge-secret"
-      );
-
-      // Complete the challenge
+      // Extract token from the URL
+      const startUrl = startRes.body.url;
+      const urlObj = new URL(startUrl, "http://localhost");
+      const token = urlObj.searchParams.get("session");
+      
+      if (!token) {
+        throw new Error("No token in challenge start URL");
+      }
+      
+      // Ensure session is persisted
+      await agent.get("/api/customer-auth/me");
+      
       const response = await agent.post("/api/challenges/complete")
         .send({ token });
+      
+      // Log response for debugging if test fails
+      if (response.status !== 200) {
+        console.error("Challenge complete failed:", response.status, response.body);
+      }
 
       expect(response.status).toBe(200);
       expect(response.body.code).toBeDefined();
