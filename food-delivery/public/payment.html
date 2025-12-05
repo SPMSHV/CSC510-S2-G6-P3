@@ -151,7 +151,8 @@
                     
                     <div class="mb-3">
                         <label class="form-label">Name on Card</label>
-                        <input type="text" class="form-control" required />
+                        <input type="text" id="nameOnCard" class="form-control" required placeholder="John Doe" />
+                        <small class="text-muted">Only letters and spaces allowed</small>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Card Number</label>
@@ -261,6 +262,8 @@
     <script>
         /* ---------- Setup: ensure stable element IDs ---------- */
         const form = document.getElementById("mockPayForm");
+        const nameInput = document.getElementById("nameOnCard");
+        
         const cardInput = form.querySelector('input[placeholder*="4242"]') || form.querySelector('input[name="cardNumber"]') || (function () { const i = document.createElement('input'); i.id = 'cardNumber'; return i; })();
         cardInput.id = cardInput.id || 'cardNumber';
 
@@ -403,7 +406,23 @@
 
         /* ---------- Utilities ---------- */
         const onlyDigits = s => s.replace(/\D/g, '');
+        const onlyLettersAndSpaces = s => s.replace(/[^a-zA-Z\s]/g, '');
         const chunk = (s, n) => s.match(new RegExp('.{1,' + n + '}', 'g')) || [];
+
+        /* ---------- Name on Card: only letters and spaces ---------- */
+        nameInput.addEventListener('input', (e) => {
+            const pos = nameInput.selectionStart;
+            const cleaned = onlyLettersAndSpaces(nameInput.value);
+            nameInput.value = cleaned;
+            // Try to maintain caret position
+            const newPos = Math.min(pos, cleaned.length);
+            requestAnimationFrame(() => nameInput.setSelectionRange(newPos, newPos));
+            validateAll();
+        });
+
+        nameInput.addEventListener('blur', () => {
+            validateName(); // show message on blur
+        });
 
         /* ---------- Card formatting (groups of 4) ---------- */
         cardInput.addEventListener('input', (e) => {
@@ -497,13 +516,21 @@
             return ok;
         }
 
+        function validateName(showHint = false) {
+            const v = nameInput.value.trim();
+            const ok = v.length >= 2 && /^[a-zA-Z\s]+$/.test(v);
+            ensureHint(nameInput, 'name', ok ? '' : (showHint ? 'Name must contain only letters and spaces (minimum 2 characters)' : ''));
+            return ok;
+        }
+
         /* ---------- Overall validator enables the pay button ---------- */
         function validateAll() {
+            const nameOk = validateName(false);
             const cardOk = validateCard(false);
             const expOk = validateExpiry(false);
             const cvvOk = validateCVV(false);
 
-            const canPay = cardOk && expOk && cvvOk;
+            const canPay = nameOk && cardOk && expOk && cvvOk;
             payBtn.disabled = !canPay;
             return canPay;
         }
@@ -512,10 +539,11 @@
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
             // final checks show hints if invalid
-            const ok = validateCard(true) && validateExpiry(true) && validateCVV(true);
+            const ok = validateName(true) && validateCard(true) && validateExpiry(true) && validateCVV(true);
             if (!ok) {
                 // visually focus first invalid
-                if (!validateCard(false)) cardInput.focus();
+                if (!validateName(false)) nameInput.focus();
+                else if (!validateCard(false)) cardInput.focus();
                 else if (!validateExpiry(false)) expiryInput.focus();
                 else cvvInput.focus();
                 return;

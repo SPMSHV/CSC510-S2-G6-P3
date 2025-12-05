@@ -19,22 +19,65 @@ router.get("/puzzle/:difficulty", async (req, res) => {
     }
 
     // Query puzzles with solution moves at database level
-    const puzzles = await ChessPuzzle.find({ 
+    // Also filter by puzzleType if provided in query params to ensure variety
+    const query = { 
       difficulty,
       solutionMoves: { $exists: true, $type: "array" }
-    });
+    };
+    
+    // If puzzleType is specified, filter by it; otherwise get all types for variety
+    const { puzzleType } = req.query;
+    if (puzzleType && ["checkmate", "tactical", "endgame"].includes(puzzleType)) {
+      query.puzzleType = puzzleType;
+    }
+    
+    const puzzles = await ChessPuzzle.find(query);
+    console.log(`🔍 Found ${puzzles.length} puzzles for difficulty: ${difficulty}`);
     
     // Filter to only include puzzles with non-empty solutionMoves
     const validPuzzles = puzzles.filter(puzzle => {
-      return puzzle.solutionMoves && 
-             Array.isArray(puzzle.solutionMoves) && 
-             puzzle.solutionMoves.length > 0;
+      const hasSolutionMoves = puzzle.solutionMoves && 
+                               Array.isArray(puzzle.solutionMoves) && 
+                               puzzle.solutionMoves.length > 0;
+      if (!hasSolutionMoves) {
+        console.log(`⚠️ Puzzle ${puzzle._id} filtered out - solutionMoves:`, puzzle.solutionMoves);
+      }
+      return hasSolutionMoves;
     });
     
+    console.log(`✅ Valid puzzles after filtering: ${validPuzzles.length}`);
+    
     if (validPuzzles.length === 0) {
+      console.error(`❌ No valid puzzles found for difficulty: ${difficulty}`);
+      // If no puzzles found with specific type, try without type filter
+      if (puzzleType) {
+        const fallbackPuzzles = await ChessPuzzle.find({ 
+          difficulty,
+          solutionMoves: { $exists: true, $type: "array" }
+        });
+        const fallbackValid = fallbackPuzzles.filter(puzzle => {
+          return puzzle.solutionMoves && 
+                 Array.isArray(puzzle.solutionMoves) && 
+                 puzzle.solutionMoves.length > 0;
+        });
+        if (fallbackValid.length === 0) {
+          return res.status(404).json({ error: `No puzzles with solutions found for difficulty: ${difficulty}` });
+        }
+        const randomPuzzle = fallbackValid[Math.floor(Math.random() * fallbackValid.length)];
+        return res.json({
+          puzzleId: randomPuzzle._id,
+          fen: randomPuzzle.fen,
+          hint: randomPuzzle.hint,
+          description: randomPuzzle.description,
+          puzzleType: randomPuzzle.puzzleType,
+          difficulty: randomPuzzle.difficulty,
+          solutionMoves: randomPuzzle.solutionMoves
+        });
+      }
       return res.status(404).json({ error: `No puzzles with solutions found for difficulty: ${difficulty}` });
     }
 
+    // Randomly select a puzzle to ensure variety
     const randomPuzzle = validPuzzles[Math.floor(Math.random() * validPuzzles.length)];
     
     // Double-check that solutionMoves exist before returning

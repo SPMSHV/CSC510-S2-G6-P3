@@ -133,21 +133,23 @@ function useChallengeSession() {
             console.error("❌ d.solutionMoves type:", typeof d.solutionMoves);
           }
           
+          const puzzleData = type === "chess" ? {
+            puzzleId: d.puzzleId,
+            fen: d.fen,
+            hint: d.hint,
+            description: d.description,
+            puzzleType: d.puzzleType,
+            difficulty: d.difficulty,
+            solutionMoves: solutionMovesArray // Always include solutionMoves
+          } : null;
+          
           setState({
             loading: false,
             token,
             error: null,
             info: { ...d, challengeType: type, solutionMoves: solutionMovesArray }, // Ensure solutionMoves is always included
             challengeType: type,
-            chessPuzzleData: type === "chess" ? {
-              puzzleId: d.puzzleId,
-              fen: d.fen,
-              hint: d.hint,
-              description: d.description,
-              puzzleType: d.puzzleType,
-              difficulty: d.difficulty,
-              solutionMoves: solutionMovesArray // Always include solutionMoves
-            } : null
+            chessPuzzleData: puzzleData
           });
         }
       })
@@ -281,7 +283,23 @@ function App() {
   const session = useChallengeSession(); //get token + expiry
   const [challengeType, setChallengeType] = useState("coding"); // "coding" or "chess"
   const [chessPuzzleData, setChessPuzzleData] = useState(null);
+  const [currentChessPuzzle, setCurrentChessPuzzle] = useState(null); // Track current puzzle for difficulty changes
 
+
+  // Initialize currentChessPuzzle from session when it loads
+  React.useEffect(() => {
+    if (session.info?.challengeType === "chess" && session.info?.fen && !currentChessPuzzle) {
+      setCurrentChessPuzzle({
+        puzzleId: session.info.puzzleId,
+        fen: session.info.fen,
+        hint: session.info.hint,
+        description: session.info.description,
+        puzzleType: session.info.puzzleType,
+        difficulty: session.info.difficulty,
+        solutionMoves: session.info.solutionMoves || []
+      });
+    }
+  }, [session.info?.challengeType, session.info?.fen, session.info?.puzzleId]);
 
   React.useEffect(() => {
     if (session.loading || session.error || !session.token) return;
@@ -702,11 +720,11 @@ function App() {
 
       {/* === Main Section === */}
       {/* Check if this is a chess challenge - render differently */}
-      {(session.info?.challengeType === "chess" && session.info?.fen) ? (
+      {(session.info?.challengeType === "chess" && (currentChessPuzzle || session.info?.fen)) ? (
         // Chess puzzle layout - full width, no coding UI
         <div style={{ maxWidth: "1200px", margin: "0 auto", width: "100%" }}>
           <ChessPuzzle
-            puzzleData={{
+            puzzleData={currentChessPuzzle || {
               puzzleId: session.info.puzzleId,
               fen: session.info.fen,
               hint: session.info.hint,
@@ -715,7 +733,7 @@ function App() {
               difficulty: session.info.difficulty,
               solutionMoves: session.info.solutionMoves || [] // Ensure it's always an array
             }}
-            difficulty={session.info.difficulty}
+            difficulty={(currentChessPuzzle?.difficulty || session.info?.difficulty)}
             onComplete={async () => {
               // When puzzle is solved, complete the challenge
               try {
@@ -751,32 +769,54 @@ function App() {
             onNewPuzzle={async (newDifficulty) => {
               // Get a new puzzle with the selected difficulty
               try {
+                console.log("🔄 Fetching new puzzle with difficulty:", newDifficulty);
                 const res = await fetch(`${API_BASE}/chess/puzzle/${newDifficulty}`, {
                   credentials: "include",
                 });
                 const data = await res.json();
-                if (res.ok) {
-                  // Update the session info with new puzzle data
-                  // This will trigger a re-render with the new puzzle
-                  session.info = {
-                    ...session.info,
-                    puzzleId: data.puzzleId,
-                    fen: data.fen,
-                    hint: data.hint,
-                    description: data.description,
-                    puzzleType: data.puzzleType,
-                    difficulty: data.difficulty,
-                    solutionMoves: data.solutionMoves || []
-                  };
-                  // Force a page reload to get fresh puzzle
-                  window.location.reload();
-                } else {
-                  setModalMsg(`❌ ${data.error || "Failed to load new puzzle"}`);
+                console.log("📦 Puzzle response:", data);
+                
+                if (!res.ok || !data.puzzleId) {
+                  console.error("❌ Failed to fetch puzzle:", data);
+                  setModalMsg(`❌ ${data.error || `Failed to load ${newDifficulty} puzzle`}`);
                   setModalTitle("Error");
                   setModalOpen(true);
+                  return;
+                }
+                
+                // Update puzzle data directly in state (like coding challenge does)
+                const newPuzzleData = {
+                  puzzleId: data.puzzleId,
+                  fen: data.fen,
+                  hint: data.hint,
+                  description: data.description,
+                  puzzleType: data.puzzleType,
+                  difficulty: data.difficulty,
+                  solutionMoves: data.solutionMoves || []
+                };
+                
+                console.log("✅ Updating puzzle data in state:", newPuzzleData);
+                setCurrentChessPuzzle(newPuzzleData);
+                
+                // Optionally update session in background (non-blocking)
+                const params = new URLSearchParams(window.location.search);
+                const token = params.get("session");
+                if (token) {
+                  // Try to update session in background, but don't block on it
+                  fetch(`${API_BASE}/challenges/session`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                    body: JSON.stringify({
+                      token,
+                      info: newPuzzleData
+                    })
+                  }).catch(err => {
+                    console.warn("⚠️ Background session update failed (non-critical):", err);
+                  });
                 }
               } catch (e) {
-                console.error("Error loading new puzzle:", e);
+                console.error("❌ Error loading new puzzle:", e);
                 setModalMsg(`❌ Error: ${e.message || "Could not load new puzzle"}`);
                 setModalTitle("Error");
                 setModalOpen(true);
@@ -788,6 +828,9 @@ function App() {
         // Coding challenge layout - two columns
         <div
           style={{
+            maxWidth: "1400px",
+            margin: "0 auto",
+            width: "100%",
             display: "grid",
             gridTemplateColumns: "minmax(360px, 420px) 1fr",
             gap: 22,
@@ -927,63 +970,63 @@ function App() {
                 )}
               </div>
             )}
-          </div>
-          </div>
-
-          {/* === Rewards Table === */}
-          <div
-            style={{
-              background: colors.card,
-              border: `1px solid ${colors.border}`,
-              borderRadius: 16,
-              padding: 18,
-              boxShadow: "0 12px 36px rgba(0,0,0,0.45)"
-            }}
-          >
-            {/* 🎯 Mystery Cashback Challenge */}
+            </div>
+            
+            {/* === Rewards Table === */}
             <div
               style={{
-                background: "#0a1520",
-                borderRadius: 12,
+                background: colors.card,
+                border: `1px solid ${colors.border}`,
+                borderRadius: 16,
                 padding: 18,
-                marginTop: 20,
-                border: "1px solid #00ffb366",
-                textAlign: "center",
-                boxShadow: "0 0 20px rgba(0,255,179,0.1)",
+                boxShadow: "0 12px 36px rgba(0,0,0,0.45)"
               }}
             >
-              <h4 style={{ color: colors.accent2, marginBottom: 8, fontSize: 18 }}>
-                🎯 Mystery Cashback Challenge
-              </h4>
-              <p style={{ color: "#a6c9da", fontSize: 14, marginBottom: 6 }}>
-                Solve a{" "}
-                <span style={{ color: colors.accent }}>
-                  {selectedProblem?.difficulty?.toUpperCase() || "???"}
-                </span>{" "}
-                challenge to unlock:
-              </p>
-
-              <h3
+              {/* 🎯 Mystery Cashback Challenge */}
+              <div
                 style={{
-                  color: "#00ffb3",
-                  margin: "8px 0",
-                  fontSize: 20,
-                  textShadow: "0 0 10px rgba(0,255,179,0.3)",
+                  background: "#0a1520",
+                  borderRadius: 12,
+                  padding: 18,
+                  marginTop: 20,
+                  border: "1px solid #00ffb366",
+                  textAlign: "center",
+                  boxShadow: "0 0 20px rgba(0,255,179,0.1)",
                 }}
               >
-                {rewardMap[selectedProblem?.difficulty || "easy"].cashback}
-              </h3>
+                <h4 style={{ color: colors.accent2, marginBottom: 8, fontSize: 18 }}>
+                  🎯 Mystery Cashback Challenge
+                </h4>
+                <p style={{ color: "#a6c9da", fontSize: 14, marginBottom: 6 }}>
+                  Solve a{" "}
+                  <span style={{ color: colors.accent }}>
+                    {selectedProblem?.difficulty?.toUpperCase() || "???"}
+                  </span>{" "}
+                  challenge to unlock:
+                </p>
 
-              <p
-                style={{
-                  fontSize: 13,
-                  color: "#85a3b3",
-                  fontStyle: "italic",
-                  marginTop: 6,
-                }}
-              >
-                (Coupon revealed only after all tests pass)
-              </p>
+                <h3
+                  style={{
+                    color: "#00ffb3",
+                    margin: "8px 0",
+                    fontSize: 20,
+                    textShadow: "0 0 10px rgba(0,255,179,0.3)",
+                  }}
+                >
+                  {rewardMap[selectedProblem?.difficulty || "easy"].cashback}
+                </h3>
+
+                <p
+                  style={{
+                    fontSize: 13,
+                    color: "#85a3b3",
+                    fontStyle: "italic",
+                    marginTop: 6,
+                  }}
+                >
+                  (Coupon revealed only after all tests pass)
+                </p>
+              </div>
             </div>
           </div>
 
@@ -998,25 +1041,6 @@ function App() {
               boxShadow: "0 12px 36px rgba(0,0,0,0.45)"
             }}
           >
-            <div
-              style={{
-                background: colors.card,
-                border: `1px solid ${colors.border}`,
-                borderRadius: 16,
-                padding: 18,
-                boxShadow: "0 12px 36px rgba(0,0,0,0.45)"
-              }}
-            >
-            {/* === Code Panel === */}
-            <div
-              style={{
-                background: colors.card,
-                border: `1px solid ${colors.border}`,
-                borderRadius: 16,
-                padding: 18,
-                boxShadow: "0 12px 36px rgba(0,0,0,0.45)"
-              }}
-            >
             {/* Language and Run Bar */}
             <div
               style={{
@@ -1231,8 +1255,6 @@ function App() {
                 </>
               ) : null}
             </div>
-            </div>
-          </div>
           </div>
         </div>
       )}

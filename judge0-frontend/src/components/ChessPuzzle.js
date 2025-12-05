@@ -47,11 +47,19 @@ function ChessPuzzle({ puzzleData, onComplete, difficulty, onNewPuzzle }) {
   const [showHint, setShowHint] = useState(false);
   const [playerColor, setPlayerColor] = useState("white"); // Track which color the player is playing
   const [solutionMoves, setSolutionMoves] = useState([]); // Store the expected solution moves
+  const [playerMovesOnly, setPlayerMovesOnly] = useState([]); // Cache of only player moves from solution
   const [unsuccessfulMoves, setUnsuccessfulMoves] = useState(0); // Track unsuccessful move attempts
   const [solutionViewed, setSolutionViewed] = useState(false); // Track if solution was viewed
   const [showSolution, setShowSolution] = useState(false); // Show solution moves
   const [showDifficultySelector, setShowDifficultySelector] = useState(false); // Show difficulty selector
   const [selectedDifficulty, setSelectedDifficulty] = useState(difficulty || "easy"); // Selected difficulty for new puzzle
+  
+  // Update selectedDifficulty when difficulty prop changes
+  useEffect(() => {
+    if (difficulty) {
+      setSelectedDifficulty(difficulty);
+    }
+  }, [difficulty]);
   const [solutionMovesSAN, setSolutionMovesSAN] = useState([]); // Store SAN notation for display
 
   // Get solution moves from puzzleData (passed from App.js via session)
@@ -120,7 +128,35 @@ function ChessPuzzle({ puzzleData, onComplete, difficulty, onNewPuzzle }) {
         
         // Determine player color from FEN (the side to move)
         const turn = fen.split(' ')[1]; // 'w' or 'b'
-        setPlayerColor(turn === 'w' ? 'white' : 'black');
+        const newPlayerColor = turn === 'w' ? 'white' : 'black';
+        setPlayerColor(newPlayerColor);
+        
+        // Recompute player moves only when player color changes
+        if (puzzleData?.solutionMoves && Array.isArray(puzzleData.solutionMoves) && puzzleData.solutionMoves.length > 0) {
+          const gameForFiltering = new Chess(fen);
+          const playerMoves = [];
+          
+          for (let i = 0; i < puzzleData.solutionMoves.length; i++) {
+            const move = puzzleData.solutionMoves[i];
+            const isPlayerTurn = (gameForFiltering.turn() === 'w' && newPlayerColor === 'white') || 
+                                (gameForFiltering.turn() === 'b' && newPlayerColor === 'black');
+            
+            if (isPlayerTurn) {
+              playerMoves.push(move);
+            }
+            
+            // Make the move to advance the game state
+            try {
+              const from = move.replace(/[+#]/g, '').substring(0, 2);
+              const to = move.replace(/[+#]/g, '').substring(2, 4);
+              gameForFiltering.move({ from, to, promotion: 'q' });
+            } catch (e) {
+              console.warn("Error simulating move for filtering:", e);
+            }
+          }
+          
+          setPlayerMovesOnly(playerMoves);
+        }
         
         setGame(newGame);
         setMoveHistory([]);
@@ -146,8 +182,9 @@ function ChessPuzzle({ puzzleData, onComplete, difficulty, onNewPuzzle }) {
     setSolutionMovesSAN([]);
   }, [puzzleData?.puzzleId]);
 
-  // Make opponent's move automatically
-  const makeOpponentMove = (gameState) => {
+  // Make opponent's move automatically using the solution move
+  // Optimized: use a simple mapping based on player move count
+  const makeOpponentMove = (gameState, currentMoveHistory) => {
     try {
       const gameCopy = new Chess(gameState.fen());
       const moves = gameCopy.moves({ verbose: true });
@@ -157,13 +194,33 @@ function ChessPuzzle({ puzzleData, onComplete, difficulty, onNewPuzzle }) {
         return gameState;
       }
       
-      // Make a random valid move for the opponent
-      // In a real puzzle, this would be the opponent's best response
+      // Simple approach: after N player moves, we need the (2N)th move from solutionMoves
+      // (since solutionMoves alternates: player, opponent, player, opponent, ...)
+      // After 1 player move, we need solutionMoves[1] (opponent's first move)
+      // After 2 player moves, we need solutionMoves[3] (opponent's second move)
+      // Formula: solutionIndex = 2 * playerMoveCount - 1
+      const playerMoveCount = currentMoveHistory.length;
+      const solutionIndex = 2 * playerMoveCount - 1;
+      
+      // Get the opponent's move from solutionMoves
+      if (solutionIndex >= 0 && solutionIndex < solutionMoves.length) {
+        const opponentMove = solutionMoves[solutionIndex];
+        const from = opponentMove.replace(/[+#]/g, '').substring(0, 2);
+        const to = opponentMove.replace(/[+#]/g, '').substring(2, 4);
+        const result = gameCopy.move({ from, to, promotion: 'q' });
+        
+        if (result) {
+          console.log("Opponent move (from solution):", result.san);
+          return gameCopy;
+        }
+      }
+      
+      // Fallback: make a random valid move if solution move not found
       const randomMove = moves[Math.floor(Math.random() * moves.length)];
       const result = gameCopy.move(randomMove);
       
       if (result) {
-        console.log("Opponent move:", result.san);
+        console.log("Opponent move (random fallback):", result.san);
         return gameCopy;
       }
       
@@ -184,6 +241,13 @@ function ChessPuzzle({ puzzleData, onComplete, difficulty, onNewPuzzle }) {
     // Block moves after 3 unsuccessful attempts (unless solution is being viewed)
     if (unsuccessfulMoves >= 3 && !showSolution) {
       setMessage("You've reached 3 unsuccessful attempts. Please view the solution or try a new puzzle.");
+      return false;
+    }
+
+    // Validate puzzleData exists
+    if (!puzzleData || !puzzleData.fen) {
+      console.error("No puzzleData or FEN available");
+      setMessage("Error: Puzzle data not loaded. Please refresh the page.");
       return false;
     }
 
@@ -216,15 +280,22 @@ function ChessPuzzle({ puzzleData, onComplete, difficulty, onNewPuzzle }) {
 
       // Create move in UCI format (e.g., "e2e4")
       const moveUCI = `${sourceSquare}${targetSquare}`;
-      const expectedMoveIndex = moveHistory.length;
       
       // IMPORTANT: Check if this move matches the expected solution move BEFORE updating the board
       // This prevents incorrect moves (including the first move) from updating the board
-      if (solutionMoves.length > 0) {
-        const expectedMove = solutionMoves[expectedMoveIndex];
+      if (playerMovesOnly.length > 0) {
+        const expectedMoveIndex = moveHistory.length;
+        const expectedMove = playerMovesOnly[expectedMoveIndex];
         console.log(`Validating move ${expectedMoveIndex + 1}: ${moveUCI} against expected: ${expectedMove}`);
-        if (expectedMove && moveUCI !== expectedMove) {
-          console.log("❌ Move doesn't match solution:", moveUCI, "expected:", expectedMove);
+        
+        // Clean the expected move (remove any + or # notation for comparison)
+        // But keep the original for display - + means check, # means checkmate
+        const cleanExpectedMove = expectedMove ? expectedMove.replace(/[+#]/g, '') : null;
+        const cleanMoveUCI = moveUCI.replace(/[+#]/g, '');
+        
+        if (!cleanExpectedMove || cleanMoveUCI !== cleanExpectedMove) {
+          // Move is incorrect
+          console.log("❌ Move doesn't match solution:", cleanMoveUCI, "expected:", cleanExpectedMove);
           // Only increment if we haven't reached 3 attempts yet
           if (unsuccessfulMoves < 3) {
             const newUnsuccessfulCount = unsuccessfulMoves + 1;
@@ -234,12 +305,17 @@ function ChessPuzzle({ puzzleData, onComplete, difficulty, onNewPuzzle }) {
           } else {
             setMessage("You've reached 3 unsuccessful attempts. Please view the solution or try a new puzzle.");
           }
-          return false; // Snap back - don't update the board (this prevents board state change)
+          return false; // Snap back - don't update the board (this prevents board state change and opponent moves)
         } else {
           // Move is correct, reset unsuccessful counter
           console.log("✅ Move matches solution!");
           setUnsuccessfulMoves(0);
         }
+      } else {
+        // No solution moves available - can't validate, so reject the move
+        console.log("❌ No solution moves available for validation");
+        setMessage("Error: Puzzle solution not loaded. Please refresh the page.");
+        return false;
       }
       
       // Only create newMoveHistory if move is valid (we've passed validation above)
@@ -288,7 +364,7 @@ function ChessPuzzle({ puzzleData, onComplete, difficulty, onNewPuzzle }) {
           if (isOpponentTurn && !updatedGame.isGameOver()) {
             // Make opponent move after a short delay for visual effect
             setTimeout(() => {
-              const gameWithOpponentMove = makeOpponentMove(updatedGame);
+              const gameWithOpponentMove = makeOpponentMove(updatedGame, newMoveHistory);
               setGame(gameWithOpponentMove);
             }, 500);
           }
@@ -333,16 +409,54 @@ function ChessPuzzle({ puzzleData, onComplete, difficulty, onNewPuzzle }) {
         setMoveHistory(newMoveHistory);
         setMessage("");
 
-        // Check if it's now the opponent's turn and make their move
+        // Check if the game is over (checkmate or stalemate) FIRST
+        const isGameOver = gameCopy.isGameOver();
+        const isCheckmate = gameCopy.isCheckmate();
+        
+        if (isCheckmate) {
+          // Puzzle is solved! Mark as solved immediately
+          console.log("✅ Checkmate! Puzzle solved!");
+          setSolved(true);
+          setMessage("🎉 Checkmate! Puzzle solved!");
+          setLoading(true);
+          
+          // Verify with backend to confirm
+          axios.post(`${API_BASE}/chess/verify`, {
+            puzzleId: puzzleData.puzzleId,
+            moves: newMoveHistory,
+          })
+          .then((response) => {
+            console.log("Verification response:", response.data);
+            if (response.data.solved) {
+              if (onComplete && !solutionViewed) {
+                // Only give coupon if solution wasn't viewed
+                onComplete();
+              } else if (solutionViewed) {
+                setMessage("Puzzle solved, but no reward (solution was viewed). Try a new puzzle!");
+                setShowDifficultySelector(true);
+              }
+            }
+          })
+          .catch((error) => {
+            console.error("Verification error:", error);
+          })
+          .finally(() => {
+            setLoading(false);
+          });
+          
+          return true; // Allow the move
+        }
+        
+        // Check if it's now the opponent's turn and make their move (only if game is not over)
         const updatedGame = new Chess(gameCopy.fen());
         const nextTurn = updatedGame.turn();
         const isOpponentTurn = (nextTurn === 'w' && playerColor === 'black') || 
                               (nextTurn === 'b' && playerColor === 'white');
         
-        if (isOpponentTurn && !updatedGame.isGameOver()) {
+        if (isOpponentTurn && !isGameOver) {
           // Make opponent move after a short delay for visual effect
           setTimeout(() => {
-            const gameWithOpponentMove = makeOpponentMove(updatedGame);
+            const gameWithOpponentMove = makeOpponentMove(updatedGame, newMoveHistory);
             setGame(gameWithOpponentMove);
           }, 500);
         }
@@ -579,7 +693,108 @@ function ChessPuzzle({ puzzleData, onComplete, difficulty, onNewPuzzle }) {
     }}>
       <div style={{ marginBottom: "20px", textAlign: "center", width: "100%" }}>
         <h2 style={{ marginBottom: "10px" }}>Chess Puzzle Challenge</h2>
-        {puzzleData.description && (
+        
+        {/* Difficulty Selector */}
+        <div style={{ 
+          marginBottom: "20px",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          gap: "10px",
+          flexWrap: "wrap"
+        }}>
+          <label style={{ 
+            fontSize: "14px", 
+            fontWeight: 600,
+            color: "#333",
+            marginRight: "8px"
+          }}>
+            Difficulty:
+          </label>
+          <select
+            value={selectedDifficulty}
+            onChange={async (e) => {
+              const newDifficulty = e.target.value;
+              setSelectedDifficulty(newDifficulty);
+              
+              // Automatically fetch new puzzle when difficulty changes
+              if (onNewPuzzle) {
+                setLoading(true);
+                try {
+                  await onNewPuzzle(newDifficulty);
+                  // Reset all states for new puzzle
+                  setUnsuccessfulMoves(0);
+                  setSolutionViewed(false);
+                  setShowSolution(false);
+                  setShowDifficultySelector(false);
+                  setMessage("");
+                  setSolved(false);
+                  setMoveHistory([]);
+                  setSolutionMovesSAN([]);
+                } catch (error) {
+                  console.error("Error loading new puzzle:", error);
+                  setMessage("Error loading new puzzle. Please try again.");
+                  // Revert to previous difficulty on error
+                  setSelectedDifficulty(difficulty || "easy");
+                } finally {
+                  setLoading(false);
+                }
+              }
+            }}
+            disabled={loading}
+            style={{
+              padding: "8px 16px",
+              borderRadius: "6px",
+              border: "2px solid #2196F3",
+              background: loading ? "#f5f5f5" : "white",
+              color: loading ? "#999" : "#333",
+              fontSize: "14px",
+              fontWeight: 600,
+              cursor: loading ? "not-allowed" : "pointer",
+              outline: "none",
+              opacity: loading ? 0.6 : 1
+            }}
+          >
+            <option value="easy">Easy 🍀</option>
+            <option value="medium">Medium 🚀</option>
+            <option value="hard">Hard 🧠</option>
+          </select>
+          {onNewPuzzle && (
+            <button
+              onClick={handleTryAgain}
+              disabled={loading}
+              style={{
+                padding: "8px 16px",
+                background: loading ? "#ccc" : "#4CAF50",
+                color: "white",
+                border: "none",
+                borderRadius: "6px",
+                cursor: loading ? "not-allowed" : "pointer",
+                fontSize: "14px",
+                fontWeight: 600,
+                marginLeft: "10px"
+              }}
+            >
+              {loading ? "Loading..." : "🔄 New Puzzle"}
+            </button>
+          )}
+        </div>
+        
+        {loading && (
+          <div style={{ 
+            padding: "15px", 
+            marginTop: "10px",
+            background: "#e3f2fd",
+            borderRadius: "6px",
+            color: "#1976d2",
+            fontSize: "14px",
+            fontWeight: 600
+          }}>
+            ⏳ Loading new puzzle...
+          </div>
+        )}
+        
+        {puzzleData.description && !loading && (
           <p style={{ fontSize: "16px", marginTop: "10px", color: "#333" }}>
             {puzzleData.description}
           </p>

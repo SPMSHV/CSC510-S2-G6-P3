@@ -36,6 +36,7 @@ router.post("/start", async (req, res) => {
       
       // Query puzzles with solution moves at database level
       // MongoDB query: solutionMoves exists and is an array
+      // Don't filter by puzzleType to ensure variety - randomly select from all types
       const puzzles = await ChessPuzzle.find({ 
         difficulty: finalDifficulty,
         solutionMoves: { $exists: true, $type: "array" }
@@ -55,6 +56,7 @@ router.post("/start", async (req, res) => {
         return res.status(404).json({ error: `No valid chess puzzles with solutions found for difficulty: ${finalDifficulty}` });
       }
       
+      // Randomly select a puzzle to ensure variety in puzzleType
       const randomPuzzle = validPuzzles[Math.floor(Math.random() * validPuzzles.length)];
       
       // Final validation - ensure solution moves exist
@@ -134,6 +136,25 @@ router.get("/session", async (req, res) => {
     const payload = jwt.verify(token, CHALLENGE_JWT_SECRET);
     const sess = await ChallengeSession.findById(payload.sid);
     if (!sess) return res.status(404).json({ error: "Session not found" });
+    
+    // Support updating puzzle via query parameters (fallback if PUT doesn't work)
+    const updatePuzzleId = req.query?.updatePuzzleId;
+    const updateDifficulty = req.query?.updateDifficulty;
+    let puzzleIdToLoad = sess.puzzleId; // Default to current puzzleId
+    if (updatePuzzleId && sess.challengeType === "chess") {
+      const ChessPuzzle = (await import("../models/ChessPuzzle.js")).default;
+      const puzzle = await ChessPuzzle.findById(updatePuzzleId);
+      if (puzzle) {
+        console.log(`🔄 Updating session ${sess._id}: puzzleId ${sess.puzzleId} -> ${updatePuzzleId}, difficulty ${sess.difficulty} -> ${updateDifficulty}`);
+        sess.puzzleId = updatePuzzleId;
+        puzzleIdToLoad = updatePuzzleId; // Use the new puzzleId
+        if (updateDifficulty) sess.difficulty = updateDifficulty;
+        await sess.save();
+        console.log(`✅ Session ${sess._id} updated via GET: puzzleId=${sess.puzzleId}, difficulty=${sess.difficulty}`);
+      } else {
+        console.error(`❌ Puzzle ${updatePuzzleId} not found in database`);
+      }
+    }
 
     // 🔴 Check if the linked order is delivered - only expire if actually delivered
     const order = await Order.findById(sess.orderId);
@@ -166,9 +187,10 @@ router.get("/session", async (req, res) => {
     }
 
     // 🎯 CHESS SUPPORT: If it's a chess challenge, return puzzle data
-    if (sess.challengeType === "chess" && sess.puzzleId) {
+    if (sess.challengeType === "chess" && puzzleIdToLoad) {
       const ChessPuzzle = (await import("../models/ChessPuzzle.js")).default;
-      const puzzle = await ChessPuzzle.findById(sess.puzzleId);
+      console.log(`📋 Loading puzzle: puzzleId=${puzzleIdToLoad}, session.difficulty=${sess.difficulty}`);
+      const puzzle = await ChessPuzzle.findById(puzzleIdToLoad);
       if (puzzle) {
         // Validate FEN is not the initial position
         const INITIAL_FEN_POSITION = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR";
@@ -432,5 +454,51 @@ router.post("/fail", async (req, res) => {
   }
 });
 
+// 3. Update challenge session (for changing puzzle/difficulty)
+router.put("/session", async (req, res) => {
+  try {
+    const { token, info } = req.body;
+    if (!token) return res.status(400).json({ error: "token required" });
+    if (!info) return res.status(400).json({ error: "info required" });
+
+    const payload = jwt.verify(token, CHALLENGE_JWT_SECRET);
+    const sess = await ChallengeSession.findById(payload.sid);
+    if (!sess) return res.status(404).json({ error: "Session not found" });
+
+    // Update puzzleId if it's a chess challenge and new puzzle info is provided
+    if (sess.challengeType === "chess" && info.puzzleId) {
+      const ChessPuzzle = (await import("../models/ChessPuzzle.js")).default;
+      const puzzle = await ChessPuzzle.findById(info.puzzleId);
+      if (!puzzle) {
+        console.error(`❌ Puzzle not found: ${info.puzzleId}`);
+        return res.status(404).json({ error: "Puzzle not found" });
+      }
+      
+      console.log(`✅ Updating session ${sess._id} with new puzzle ${info.puzzleId} (difficulty: ${info.difficulty})`);
+      
+      // Update the session with new puzzle
+      sess.puzzleId = info.puzzleId;
+      sess.difficulty = info.difficulty || sess.difficulty;
+      await sess.save();
+      
+      console.log(`✅ Session updated successfully. New puzzleId: ${sess.puzzleId}, difficulty: ${sess.difficulty}`);
+      
+      return res.json({ 
+        success: true,
+        message: "Session updated with new puzzle",
+        puzzleId: sess.puzzleId,
+        difficulty: sess.difficulty
+      });
+    }
+
+    return res.json({ success: true });
+  } catch (err) {
+    console.error("❌ Error updating session:", err);
+    if (err.name === "JsonWebTokenError") {
+      return res.status(401).json({ error: "Invalid token" });
+    }
+    res.status(500).json({ error: "Internal error" });
+  }
+});
 
 export default router;
