@@ -447,7 +447,8 @@
         // pick highest discount%
         coupons.sort((a, b) => (b.discountPct || 0) - (a.discountPct || 0));
         const best = coupons[0];
-        const discount = Math.round(subtotal * (best.discountPct / 100));
+        // Calculate discount with proper decimal precision (round to 2 decimal places)
+        const discount = Math.round((subtotal * (best.discountPct / 100)) * 100) / 100;
 
         // show banner
         document.getElementById('couponInfo').innerHTML = `
@@ -552,6 +553,12 @@
     }
 
     init().then(updateCartBadge);
+    
+    // Auto-refresh cart every 5 seconds
+    setInterval(async () => {
+      await init();
+      await updateCartBadge();
+    }, 5000);
 
 
   </script>

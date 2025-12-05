@@ -36,7 +36,13 @@ router.post("/mock-checkout", async (req, res) => {
 
     let appliedCode = null;
     let discount = 0;
-    const { couponCode } = req.body || {};
+    const { couponCode, deliveryAddress } = req.body || {};
+    
+    // Validate delivery address
+    if (!deliveryAddress || !deliveryAddress.trim()) {
+      return res.status(400).json({ error: "Delivery address is required" });
+    }
+    
     if (couponCode) {
       const coupon = await Coupon.findOne({
         code: couponCode,
@@ -46,8 +52,8 @@ router.post("/mock-checkout", async (req, res) => {
       });
       if (coupon) {
         appliedCode = coupon.code;
-        // Apply % discount on subtotal
-        discount = Math.round((subtotal * (coupon.discountPct || 0)) / 100);
+        // Apply % discount on subtotal with proper decimal precision (round to 2 decimal places)
+        discount = Math.round((subtotal * (coupon.discountPct || 0) / 100) * 100) / 100;
       }
     }
 
@@ -67,6 +73,7 @@ router.post("/mock-checkout", async (req, res) => {
       deliveryFee,
       discount,
       appliedCode,
+      deliveryLocation: deliveryAddress.trim(), // Store customer's delivery address
       total: finalTotal,
       status: "placed",         // valid enum
       paymentStatus: "paid"     // now tracked separately

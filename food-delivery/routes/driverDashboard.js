@@ -76,7 +76,8 @@ router.get('/orders/new', async (req, res) => {
       ...o.toObject(),
       deliveryPayment: (o.deliveryPayment || 0) + 5, // default $5 per delivery
       restaurantLocation: o.restaurantId?.address || 'N/A',
-      customerLocation: o.userId?.address || o.deliveryLocation || 'N/A'
+      // Prefer order-specific deliveryLocation over customer's registration address
+      customerLocation: o.deliveryLocation || o.userId?.address || 'N/A'
     }));
 
     console.log('📦 Sending orders to driver dashboard:', updated);
@@ -123,7 +124,8 @@ router.get('/orders/pending', async (req, res) => {
       ...o.toObject(),
       deliveryPayment: o.deliveryPayment || 5,
       restaurantLocation: o.restaurantId?.address || 'N/A',
-      customerLocation: o.userId?.address || o.deliveryLocation || 'N/A'
+      // Prefer order-specific deliveryLocation over customer's registration address
+      customerLocation: o.deliveryLocation || o.userId?.address || 'N/A'
     }));
     res.json(updated);
   } catch (err) {

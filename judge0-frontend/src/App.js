@@ -3,7 +3,8 @@ import axios from "axios";
 import CodeEditor from "./Editor";
 import Output from "./Output";
 import problems from "./data/problems.json";
-import TestList from "./components/TestList"
+import TestList from "./components/TestList";
+import ChessPuzzle from "./components/ChessPuzzle";
 
 const JUDGE0_API = "http://104.236.56.159:2358";
 
@@ -17,6 +18,8 @@ function useChallengeSession() {
     token: null,
     error: null,
     info: null,
+    challengeType: "coding",
+    chessPuzzleData: null,
   });
 
   React.useEffect(() => {
@@ -24,12 +27,18 @@ function useChallengeSession() {
 
     // 1) Read token from URL if present
     const urlToken = params.get("session");
+    
+    // 1a) Read challenge type from URL if present
+    const urlChallengeType = params.get("type") || null;
 
     // 2) Fallback to default from env
     const envToken = process.env.REACT_APP_DEFAULT_SESSION_TOKEN || null;
 
     // Prefer URL token if present, otherwise fall back to env default
     const token = urlToken || envToken;
+    
+    // Store challengeTypeFromUrl for use in the fetch callback
+    const challengeTypeFromUrl = urlChallengeType;
 
     // 3) In Jest tests, don't hit the real backend at all.
     //    Just return a "valid" fake-ish session so the UI renders.
@@ -62,32 +71,94 @@ function useChallengeSession() {
     }
 
     // 5) Normal behaviour: verify token with backend
+    
     fetch(`${API_BASE}/challenges/session?token=${encodeURIComponent(token)}`, {
       credentials: "include",
     })
-      .then((r) => r.json().then((d) => ({ ok: r.ok, d })))
-      .then(({ ok, d }) => {
+      .then(async (r) => {
+        let d = {};
+        try {
+          d = await r.json();
+        } catch (e) {
+          d = { error: `Server returned status ${r.status} without JSON` };
+        }
+        return { ok: r.ok, status: r.status, d };
+      })
+      .then(({ ok, status, d }) => {
         if (!ok) {
+          let errorMsg = d.error || "Invalid/expired session";
+          // Provide more specific error messages
+          if (status === 400) {
+            errorMsg = "Missing or invalid session token";
+          } else if (status === 401) {
+            errorMsg = "Invalid or expired token";
+          } else if (status === 404) {
+            errorMsg = "Session not found";
+          } else if (status === 410) {
+            errorMsg = d.error || "Session expired (order may have been delivered)";
+          } else if (status === 0 || status >= 500) {
+            errorMsg = `Cannot connect to backend. Make sure the server is running on ${API_BASE.replace('/api', '')}`;
+          }
           setState({
             loading: false,
             token,
-            error: d.error || "Invalid/expired session",
+            error: errorMsg,
             info: null,
           });
         } else {
+          // Check if this is a chess challenge - check both URL param and backend response
+          const type = d.challengeType || challengeTypeFromUrl || "coding";
+          console.log("Challenge session loaded:", { 
+            type, 
+            challengeTypeFromUrl, 
+            backendType: d.challengeType, 
+            fen: d.fen, 
+            puzzleId: d.puzzleId, 
+            solutionMoves: d.solutionMoves,
+            solutionMovesType: typeof d.solutionMoves,
+            solutionMovesIsArray: Array.isArray(d.solutionMoves),
+            solutionMovesLength: d.solutionMoves?.length,
+            fullResponse: JSON.stringify(d, null, 2)
+          });
+          
+          // CRITICAL: Ensure solutionMoves is always an array
+          const solutionMovesArray = (d.solutionMoves && Array.isArray(d.solutionMoves) && d.solutionMoves.length > 0) 
+            ? d.solutionMoves 
+            : [];
+          
+          if (type === "chess" && solutionMovesArray.length === 0) {
+            console.error("❌ CRITICAL: Chess puzzle loaded but solutionMoves is empty!");
+            console.error("❌ Full backend response:", JSON.stringify(d, null, 2));
+            console.error("❌ d.solutionMoves value:", d.solutionMoves);
+            console.error("❌ d.solutionMoves type:", typeof d.solutionMoves);
+          }
+          
+          const puzzleData = type === "chess" ? {
+            puzzleId: d.puzzleId,
+            fen: d.fen,
+            hint: d.hint,
+            description: d.description,
+            puzzleType: d.puzzleType,
+            difficulty: d.difficulty,
+            solutionMoves: solutionMovesArray // Always include solutionMoves
+          } : null;
+          
           setState({
             loading: false,
             token,
             error: null,
-            info: d,
+            info: { ...d, challengeType: type, solutionMoves: solutionMovesArray }, // Ensure solutionMoves is always included
+            challengeType: type,
+            chessPuzzleData: puzzleData
           });
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error("Session validation error:", err);
         setState({
           loading: false,
           token,
-          error: "Network error",
+          error: `Network error: Cannot reach backend at ${API_BASE}. Make sure the backend server is running on port 3000.`,
           info: null,
         });
       });
@@ -127,6 +198,7 @@ const rewardMap = {
 const languageMap = { python: 71, cpp: 54, java: 62, javascript: 63 };
 
 // Helper to finalize challenge and request coupon from backend
+// NOTE: This function is legacy and may not be used. The modal system in runAllTests handles coupon display.
 async function mintCouponAndShow(token) {
   try {
     const res = await fetch(`${API_BASE}/challenges/complete`, {
@@ -137,10 +209,13 @@ async function mintCouponAndShow(token) {
     const data = await res.json();
     if (!res.ok) throw new Error(data?.error || "Could not mint coupon");
 
-    // success popup (can later be replaced with modal)
-    alert(`🎉 ${data.label} — Code: ${data.code}`);
+    // Use modal instead of alert for better UX
+    console.log(`🎉 Coupon unlocked: ${data.label} — Code: ${data.code}`);
+    // Note: This function may not be called. The runAllTests function handles coupon display via modal.
   } catch (e) {
-    alert(e.message || "Too late — delivery completed");
+    console.error("Coupon minting error:", e);
+    // Don't show alert - let the calling code handle errors
+    throw e;
   }
 }
 
@@ -206,7 +281,25 @@ function Modal({ open, onClose, title, children }) {
 
 function App() {
   const session = useChallengeSession(); //get token + expiry
+  const [challengeType, setChallengeType] = useState("coding"); // "coding" or "chess"
+  const [chessPuzzleData, setChessPuzzleData] = useState(null);
+  const [currentChessPuzzle, setCurrentChessPuzzle] = useState(null); // Track current puzzle for difficulty changes
 
+
+  // Initialize currentChessPuzzle from session when it loads
+  React.useEffect(() => {
+    if (session.info?.challengeType === "chess" && session.info?.fen && !currentChessPuzzle) {
+      setCurrentChessPuzzle({
+        puzzleId: session.info.puzzleId,
+        fen: session.info.fen,
+        hint: session.info.hint,
+        description: session.info.description,
+        puzzleType: session.info.puzzleType,
+        difficulty: session.info.difficulty,
+        solutionMoves: session.info.solutionMoves || []
+      });
+    }
+  }, [session.info?.challengeType, session.info?.fen, session.info?.puzzleId]);
 
   React.useEffect(() => {
     if (session.loading || session.error || !session.token) return;
@@ -219,29 +312,41 @@ function App() {
           if (ok) return; // still active, do nothing
 
           // Not ok → session expired (could be because order delivered)
-          // const errMsg = (d && d.error) ? d.error.toLowerCase() : "";
+          // Check error message to determine if order is actually delivered
+          const errorMsg = d?.error || "";
+          const isOrderDelivered = errorMsg.toLowerCase().includes("delivered") || 
+                                   errorMsg.toLowerCase().includes("order has been");
 
           let msg;
-          if (status === 410) {
-            //custom message
+          if (status === 410 && isOrderDelivered) {
+            // Only show "driver at door" if order is actually delivered
             msg = "🚪 The driver is at your door.\nSorry, better luck next time — enjoy your food!!";
+          } else if (status === 410) {
+            // Session expired but order not delivered - allow user to continue
+            msg = "⏰ Session expired, but your order is still on the way.\nYou can still complete the challenge!";
           } else {
             msg = d?.error || "⏰ Session ended!!";
           }
 
-          setModalMsg(msg);
-          setModalTitle(status === 410 ? "Driver Arrived" : "Session Ended");
-          setModalOpen(true);
-          clearInterval(id);
-
-          // try closing the challenge window (it was opened with window.open from orders page)
-          setTimeout(() => {
-            try {
-              window.close();
-            } catch {
-              // ignore if browser blocks it
-            }
-          }, 2500);
+          // Only show modal and stop polling if order is actually delivered
+          if (status === 410 && isOrderDelivered) {
+            setModalMsg(msg);
+            setModalTitle("Driver Arrived");
+            setModalOpen(true);
+            clearInterval(id);
+            // Don't auto-close - let user read the message
+          } else if (status === 410) {
+            // Session expired but order not delivered - just log, don't block user
+            console.log("Session expired but order still valid:", msg);
+            // Continue polling - don't clear interval
+          } else {
+            // Other errors - show modal but don't auto-close
+            setModalMsg(msg);
+            setModalTitle("Session Ended");
+            setModalOpen(true);
+            clearInterval(id);
+            // Don't auto-close - let user read the message
+          }
         })
         .catch(() => {
           // ignore network errors for polling
@@ -387,11 +492,19 @@ function App() {
 
         if (!res.ok) {
           const msg = data?.error || "Session expired or invalid.";
-          setModalMsg(`❌ ${msg}\n\nTime to eat — better luck next time! 🍔`);
+          // Check if error is due to order being delivered
+          const isOrderDelivered = msg.toLowerCase().includes("delivered") || 
+                                   msg.toLowerCase().includes("order has been");
+          
+          if (isOrderDelivered) {
+            setModalMsg(`❌ ${msg}\n\nTime to eat — better luck next time! 🍔`);
+          } else {
+            // Session expired but order not delivered - try to reactivate
+            setModalMsg(`⚠️ ${msg}\n\nYour order is still on the way. Please try refreshing the page or contact support if this persists.`);
+          }
+          setModalTitle(isOrderDelivered ? "Too Late" : "Error");
           setModalOpen(true);
-          //setTimeout(() => {
-          //  try { window.close(); } catch { }
-          //}, 2000);
+          // Don't auto-close - let user read the message
 
           return;
         }
@@ -399,19 +512,22 @@ function App() {
         // Success: display real coupon from backend
         setReward(`🎉 ${data.label} Unlocked!`);
         setModalMsg(
-          `All test cases passed for “${selectedProblem.title}”.\n\n` +
-          `💰 You’ve unlocked ${data.label}.\n` +
+          `All test cases passed for "${selectedProblem.title}".\n\n` +
+          `💰 You've unlocked ${data.label}.\n` +
           `💳 Coupon Code: ${data.code}\n\n` +
-          `It’s automatically saved to your account for your next order.`
+          `It's automatically saved to your account for your next order.`
         );
         setModalOpen(true);
         setModalTitle("Submission Successful");
-        setTimeout(() => {
-          try { window.close(); } catch { }
-        }, 2000);
+        // Don't auto-close - let user read the coupon code and close manually
+        // User can close the tab/window when they're done reading
       } catch (e) {
-        setModalMsg("Could not contact server. Please retry.");
+        console.error("Challenge completion error:", e);
+        const errorMsg = e.message || "Could not contact server. Please retry.";
+        setModalMsg(`❌ Error: ${errorMsg}\n\nPlease check your connection and try again.`);
+        setModalTitle("Error");
         setModalOpen(true);
+        // Don't auto-close on error - let user read the error message
       }
     } else {
       setReward("");
@@ -450,8 +566,9 @@ function App() {
       setMemory(data.memory ?? "");
 
     } catch (err) {
-      console.error(err);
-      setError("❌ Error connecting to Judge0 API.");
+      console.error("Run code error:", err);
+      const errorMsg = err.response?.data?.error || err.message || "Error connecting to Judge0 API";
+      setError(`❌ ${errorMsg}`);
     }
   };
 
@@ -488,6 +605,7 @@ function App() {
   }
 
   if (session.error) {
+    const isNetworkError = session.error.includes("Cannot reach backend") || session.error.includes("Network error");
     return (
       <div
         style={{
@@ -502,9 +620,26 @@ function App() {
           textAlign: "center"
         }}
       >
-        ⚠️ {session.error}
-        <div style={{ fontSize: 14, opacity: 0.8, marginTop: 8 }}>
-          Open this page from <b>My Orders → “Try a coding challenge”</b> so it includes a session token.
+        <div>
+          <div style={{ fontSize: 24, marginBottom: 16 }}>⚠️ {session.error}</div>
+          {isNetworkError ? (
+            <div style={{ fontSize: 14, opacity: 0.8, marginTop: 16, maxWidth: 600 }}>
+              <p><b>Troubleshooting:</b></p>
+              <ul style={{ textAlign: "left", display: "inline-block" }}>
+                <li>Make sure the backend server is running on <code>http://localhost:3000</code></li>
+                <li>Check that the API_BASE is set correctly: <code>{API_BASE}</code></li>
+                <li>Verify CORS is enabled on the backend</li>
+                <li>Check browser console for detailed error messages</li>
+              </ul>
+            </div>
+          ) : (
+            <div style={{ fontSize: 14, opacity: 0.8, marginTop: 8 }}>
+              <p>Open this page from <b>My Orders → "Try a coding challenge"</b> so it includes a session token.</p>
+              <p style={{ marginTop: 8, fontSize: 12 }}>
+                If you have a token, make sure it hasn't expired and the order hasn't been delivered.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -584,32 +719,142 @@ function App() {
       </header>
 
       {/* === Main Section === */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(360px, 420px) 1fr",
-          gap: 22,
-          alignItems: "start",
-        }}
-      >
-        {/* === LEFT COLUMN === */}
+      {/* Check if this is a chess challenge - render differently */}
+      {(session.info?.challengeType === "chess" && (currentChessPuzzle || session.info?.fen)) ? (
+        // Chess puzzle layout - full width, no coding UI
+        <div style={{ maxWidth: "1200px", margin: "0 auto", width: "100%" }}>
+          <ChessPuzzle
+            puzzleData={currentChessPuzzle || {
+              puzzleId: session.info.puzzleId,
+              fen: session.info.fen,
+              hint: session.info.hint,
+              description: session.info.description,
+              puzzleType: session.info.puzzleType,
+              difficulty: session.info.difficulty,
+              solutionMoves: session.info.solutionMoves || [] // Ensure it's always an array
+            }}
+            difficulty={(currentChessPuzzle?.difficulty || session.info?.difficulty)}
+            onComplete={async () => {
+              // When puzzle is solved, complete the challenge
+              try {
+                const res = await fetch(`${API_BASE}/challenges/complete`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  credentials: "include",
+                  body: JSON.stringify({ token: session.token }),
+                });
+                const data = await res.json();
+                if (res.ok) {
+                  setReward(`🎉 ${data.label} Unlocked!`);
+                  setModalMsg(
+                    `Chess puzzle solved!\n\n` +
+                    `💰 You've unlocked ${data.label}.\n` +
+                    `💳 Coupon Code: ${data.code}\n\n` +
+                    `It's automatically saved to your account for your next order.`
+                  );
+                  setModalTitle("Puzzle Solved!");
+                  setModalOpen(true);
+                } else {
+                  setModalMsg(`❌ ${data.error || "Failed to complete challenge"}`);
+                  setModalTitle("Error");
+                  setModalOpen(true);
+                }
+              } catch (e) {
+                console.error("Challenge completion error:", e);
+                setModalMsg(`❌ Error: ${e.message || "Could not contact server"}`);
+                setModalTitle("Error");
+                setModalOpen(true);
+              }
+            }}
+            onNewPuzzle={async (newDifficulty) => {
+              // Get a new puzzle with the selected difficulty
+              try {
+                console.log("🔄 Fetching new puzzle with difficulty:", newDifficulty);
+                const res = await fetch(`${API_BASE}/chess/puzzle/${newDifficulty}`, {
+                  credentials: "include",
+                });
+                const data = await res.json();
+                console.log("📦 Puzzle response:", data);
+                
+                if (!res.ok || !data.puzzleId) {
+                  console.error("❌ Failed to fetch puzzle:", data);
+                  setModalMsg(`❌ ${data.error || `Failed to load ${newDifficulty} puzzle`}`);
+                  setModalTitle("Error");
+                  setModalOpen(true);
+                  return;
+                }
+                
+                // Update puzzle data directly in state (like coding challenge does)
+                const newPuzzleData = {
+                  puzzleId: data.puzzleId,
+                  fen: data.fen,
+                  hint: data.hint,
+                  description: data.description,
+                  puzzleType: data.puzzleType,
+                  difficulty: data.difficulty,
+                  solutionMoves: data.solutionMoves || []
+                };
+                
+                console.log("✅ Updating puzzle data in state:", newPuzzleData);
+                setCurrentChessPuzzle(newPuzzleData);
+                
+                // Optionally update session in background (non-blocking)
+                const params = new URLSearchParams(window.location.search);
+                const token = params.get("session");
+                if (token) {
+                  // Try to update session in background, but don't block on it
+                  fetch(`${API_BASE}/challenges/session`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    credentials: "include",
+                    body: JSON.stringify({
+                      token,
+                      info: newPuzzleData
+                    })
+                  }).catch(err => {
+                    console.warn("⚠️ Background session update failed (non-critical):", err);
+                  });
+                }
+              } catch (e) {
+                console.error("❌ Error loading new puzzle:", e);
+                setModalMsg(`❌ Error: ${e.message || "Could not load new puzzle"}`);
+                setModalTitle("Error");
+                setModalOpen(true);
+              }
+            }}
+          />
+        </div>
+      ) : (
+        // Coding challenge layout - two columns
         <div
           style={{
-            display: "flex",
-            flexDirection: "column",
-            gap: 18,
+            maxWidth: "1400px",
+            margin: "0 auto",
+            width: "100%",
+            display: "grid",
+            gridTemplateColumns: "minmax(360px, 420px) 1fr",
+            gap: 22,
+            alignItems: "start",
           }}
         >
-          {/* === Problem Panel === */}
+          {/* === LEFT COLUMN === */}
           <div
             style={{
-              background: colors.card,
-              border: `1px solid ${colors.border}`,
-              borderRadius: 16,
-              padding: 18,
-              boxShadow: "0 12px 36px rgba(0,0,0,0.45)"
+              display: "flex",
+              flexDirection: "column",
+              gap: 18,
             }}
           >
+            {/* === Problem Panel === */}
+            <div
+              style={{
+                background: colors.card,
+                border: `1px solid ${colors.border}`,
+                borderRadius: 16,
+                padding: 18,
+                boxShadow: "0 12px 36px rgba(0,0,0,0.45)"
+              }}
+            >
             <h2
               style={{
                 color: colors.accent,
@@ -725,79 +970,68 @@ function App() {
                 )}
               </div>
             )}
-          </div>
-
-          {/* === Rewards Table === */}
-          <div
-            style={{
-              background: colors.card,
-              border: `1px solid ${colors.border}`,
-              borderRadius: 16,
-              padding: 18,
-              boxShadow: "0 12px 36px rgba(0,0,0,0.45)"
-            }}
-          >
-            {/* 🎯 Mystery Cashback Challenge */}
+            </div>
+            
+            {/* === Rewards Table === */}
             <div
               style={{
-                background: "#0a1520",
-                borderRadius: 12,
+                background: colors.card,
+                border: `1px solid ${colors.border}`,
+                borderRadius: 16,
                 padding: 18,
-                marginTop: 20,
-                border: "1px solid #00ffb366",
-                textAlign: "center",
-                boxShadow: "0 0 20px rgba(0,255,179,0.1)",
+                boxShadow: "0 12px 36px rgba(0,0,0,0.45)"
               }}
             >
-              <h4 style={{ color: colors.accent2, marginBottom: 8, fontSize: 18 }}>
-                🎯 Mystery Cashback Challenge
-              </h4>
-              <p style={{ color: "#a6c9da", fontSize: 14, marginBottom: 6 }}>
-                Solve a{" "}
-                <span style={{ color: colors.accent }}>
-                  {selectedProblem?.difficulty?.toUpperCase() || "???"}
-                </span>{" "}
-                challenge to unlock:
-              </p>
-
-              <h3
+              {/* 🎯 Mystery Cashback Challenge */}
+              <div
                 style={{
-                  color: "#00ffb3",
-                  margin: "8px 0",
-                  fontSize: 20,
-                  textShadow: "0 0 10px rgba(0,255,179,0.3)",
+                  background: "#0a1520",
+                  borderRadius: 12,
+                  padding: 18,
+                  marginTop: 20,
+                  border: "1px solid #00ffb366",
+                  textAlign: "center",
+                  boxShadow: "0 0 20px rgba(0,255,179,0.1)",
                 }}
               >
-                {rewardMap[selectedProblem?.difficulty || "easy"].cashback}
-              </h3>
+                <h4 style={{ color: colors.accent2, marginBottom: 8, fontSize: 18 }}>
+                  🎯 Mystery Cashback Challenge
+                </h4>
+                <p style={{ color: "#a6c9da", fontSize: 14, marginBottom: 6 }}>
+                  Solve a{" "}
+                  <span style={{ color: colors.accent }}>
+                    {selectedProblem?.difficulty?.toUpperCase() || "???"}
+                  </span>{" "}
+                  challenge to unlock:
+                </p>
 
-              <p
-                style={{
-                  fontSize: 13,
-                  color: "#85a3b3",
-                  fontStyle: "italic",
-                  marginTop: 6,
-                }}
-              >
-                (Coupon revealed only after all tests pass)
-              </p>
+                <h3
+                  style={{
+                    color: "#00ffb3",
+                    margin: "8px 0",
+                    fontSize: 20,
+                    textShadow: "0 0 10px rgba(0,255,179,0.3)",
+                  }}
+                >
+                  {rewardMap[selectedProblem?.difficulty || "easy"].cashback}
+                </h3>
+
+                <p
+                  style={{
+                    fontSize: 13,
+                    color: "#85a3b3",
+                    fontStyle: "italic",
+                    marginTop: 6,
+                  }}
+                >
+                  (Coupon revealed only after all tests pass)
+                </p>
+              </div>
             </div>
           </div>
-        </div>
 
-
-        {/* === RIGHT COLUMN === */}
-        <div
-          style={{
-            background: colors.card,
-            border: `1px solid ${colors.border}`,
-            borderRadius: 16,
-            padding: 18,
-            boxShadow: "0 12px 36px rgba(0,0,0,0.45)"
-          }}
-        >
-
-          {/* === Code Panel === */}
+          {/* === RIGHT COLUMN === */}
+          {/* Coding challenge editor */}
           <div
             style={{
               background: colors.card,
@@ -1023,7 +1257,7 @@ function App() {
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Success Modal */}
       <Modal
@@ -1056,7 +1290,7 @@ function App() {
       >
         © {new Date().getFullYear()} BiteCode Arena. All rights reserved.
       </footer>
-    </div >
+    </div>
   );
 }
 

@@ -122,7 +122,7 @@ router.get("/:id", async (req, res) => {
 
     // Check authorization
     const isOwner = userId && String(refund.userId) === String(userId);
-    const isAdmin = restaurantAdminId; // Restaurant admin can view refunds for their orders
+    const isAdmin = restaurantAdminId || req.session.restaurantId; // Restaurant admin can view refunds for their orders
 
     if (!isOwner && !isAdmin) {
       return res.status(403).json({ error: "Unauthorized" });
@@ -141,7 +141,8 @@ router.get("/:id", async (req, res) => {
  */
 router.post("/:id/approve", async (req, res) => {
   try {
-    const restaurantAdminId = req.session.restaurantAdminId;
+    // Check for restaurant admin session (can be restaurantId or restaurantAdminId)
+    const restaurantAdminId = req.session.restaurantAdminId || req.session.restaurantId;
     if (!restaurantAdminId) {
       return res.status(401).json({ error: "Not authorized. Restaurant admin access required." });
     }
@@ -198,7 +199,8 @@ router.post("/:id/approve", async (req, res) => {
  */
 router.post("/:id/reject", async (req, res) => {
   try {
-    const restaurantAdminId = req.session.restaurantAdminId;
+    // Check for restaurant admin session (can be restaurantId or restaurantAdminId)
+    const restaurantAdminId = req.session.restaurantAdminId || req.session.restaurantId;
     if (!restaurantAdminId) {
       return res.status(401).json({ error: "Not authorized. Restaurant admin access required." });
     }

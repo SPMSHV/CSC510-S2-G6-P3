@@ -57,7 +57,8 @@ export function calculateETA(driverLocation, customerLocation) {
  * @returns {string} - Formatted ETA string
  */
 export function formatETA(minutes) {
-  if (!minutes) return "Calculating...";
+  if (minutes === null || minutes === undefined) return "Calculating...";
+  if (minutes === 0) return "0 minutes";
   
   if (minutes < 60) {
     return `${minutes} minute${minutes !== 1 ? 's' : ''}`;

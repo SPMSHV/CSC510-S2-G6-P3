@@ -24,18 +24,26 @@ router.post('/register', async (req, res) => {
       address
     });
 
-    //Start session
+    //Start session and explicitly save it
     req.session.customerId = customer._id.toString();
     req.session.customerName = customer.name;
-
-    res.status(201).json({
-      ok: true,
-      message: `Welcome ${customer.name}! Registration successful.`,
-      customer: {
-        name: customer.name,
-        email: customer.email,
-        address: customer.address
+    
+    // Explicitly save session to ensure it persists
+    req.session.save((err) => {
+      if (err) {
+        console.error('❌ Session save error:', err);
+        return res.status(500).json({ error: 'Failed to create session' });
       }
+      
+      res.status(201).json({
+        ok: true,
+        message: `Welcome ${customer.name}! Registration successful.`,
+        customer: {
+          name: customer.name,
+          email: customer.email,
+          address: customer.address
+        }
+      });
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -50,20 +58,30 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'email and password required' });
 
     const customer = await CustomerAuth.findOne({ email });
-    if (!customer) return res.status(401).json({ error: 'Invalid credentials' });
+    if (!customer) return res.status(401).json({ error: 'Invalid email or password' });
 
     const ok = await bcrypt.compare(password, customer.passwordHash);
-    if (!ok) return res.status(401).json({ error: 'Invalid credentials' });
+    if (!ok) return res.status(401).json({ error: 'Invalid email or password' });
 
+    // Set session and explicitly save it
     req.session.customerId = customer._id.toString();
     req.session.customerName = customer.name;
-
-    res.json({
-      ok: true,
-      message: `Welcome back ${customer.name}!`
+    
+    // Explicitly save session to ensure it persists
+    req.session.save((err) => {
+      if (err) {
+        console.error('❌ Session save error:', err);
+        return res.status(500).json({ error: 'Failed to create session' });
+      }
+      
+      res.json({
+        ok: true,
+        message: `Welcome back ${customer.name}!`
+      });
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('❌ Customer login error:', err);
+    res.status(500).json({ error: err.message || 'Internal server error' });
   }
 });
 
