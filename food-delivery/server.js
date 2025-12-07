@@ -10,6 +10,16 @@ import session from 'express-session';
 import MongoStore from "connect-mongo";
 import compression from 'compression';
 
+// Suppress DEP0060 deprecation warning (util._extend) from dependencies
+// This warning comes from older dependencies and doesn't affect functionality
+process.on('warning', (warning) => {
+  if (warning.name === 'DeprecationWarning' && warning.code === 'DEP0060') {
+    // Suppress this specific warning
+    return;
+  }
+  // Log other warnings normally
+  console.warn(warning.name, warning.message);
+});
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -46,9 +56,10 @@ app.use(
         }),
     cookie: {
       httpOnly: true,
-      sameSite: "lax",
-      secure: false,
-      maxAge: 1000 * 60 * 60 * 2,
+      sameSite: "lax", // Use "lax" for same-origin navigation, "none" for cross-origin
+      secure: false, // Set to true in production with HTTPS
+      maxAge: 1000 * 60 * 60 * 24, // 24 hours instead of 2 hours
+      path: "/", // Ensure cookie is available for all paths
     },
   })
 );

@@ -132,6 +132,80 @@ router.get("/restaurant/:restaurantId", async (req, res) => {
 });
 
 /**
+ * GET /api/ratings/driver/:driverId
+ * Get all delivery ratings for a driver
+ */
+router.get("/driver/:driverId", async (req, res) => {
+  try {
+    const { driverId } = req.params;
+    const { limit = 20, offset = 0 } = req.query;
+
+    console.log(`📊 Fetching ratings for driver: ${driverId}`);
+
+    // Find all orders delivered by this driver
+    // Mongoose will automatically convert string IDs to ObjectIds
+    const orders = await Order.find({ 
+      driverId: driverId,
+      status: 'delivered'
+    }).select('_id').lean();
+
+    console.log(`📦 Found ${orders.length} delivered orders for driver`);
+
+    if (orders.length === 0) {
+      return res.json({
+        ratings: [],
+        total: 0,
+        average: 0
+      });
+    }
+
+    // Get order IDs - keep them as ObjectIds (they're already ObjectIds from the query)
+    const orderIds = orders.map(o => o._id);
+
+    // Find all ratings with delivery ratings for these orders
+    const ratings = await OrderRating.find({
+      orderId: { $in: orderIds },
+      deliveryRating: { $ne: null }
+    })
+      .populate('userId', 'name')
+      .sort({ createdAt: -1 })
+      .limit(parseInt(limit))
+      .skip(parseInt(offset))
+      .lean();
+
+    console.log(`⭐ Found ${ratings.length} delivery ratings`);
+
+    const total = await OrderRating.countDocuments({
+      orderId: { $in: orderIds },
+      deliveryRating: { $ne: null }
+    });
+
+    // Calculate average delivery rating using aggregation
+    const avgResult = await OrderRating.aggregate([
+      { 
+        $match: { 
+          orderId: { $in: orderIds },
+          deliveryRating: { $ne: null }
+        } 
+      },
+      { $group: { _id: null, avgRating: { $avg: "$deliveryRating" } } }
+    ]);
+
+    const average = avgResult.length > 0 ? Math.round(avgResult[0].avgRating * 10) / 10 : 0;
+
+    res.json({
+      ratings,
+      total,
+      average
+    });
+  } catch (err) {
+    console.error("❌ Error fetching driver ratings:", err);
+    console.error("Stack:", err.stack);
+    res.status(500).json({ error: "Internal server error", details: err.message });
+  }
+});
+
+/**
  * Helper: Update restaurant average rating
  */
 async function updateRestaurantRating(restaurantId) {
