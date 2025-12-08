@@ -6,7 +6,10 @@
 
   <!-- Tests -->
   <a href="https://github.com/SPMSHV/CSC510-S2-G6-P3">
-    <img src="https://img.shields.io/badge/tests-122%20passing-brightgreen" alt="Tests" />
+    <img
+      src="https://img.shields.io/endpoint?url=https://gist.githubusercontent.com/ispatel/b49a2e7a496c92b2810f147f7d3cdf2f/raw/d4e723eb0f7f1047a606c57538318cef4935c1e7/tests.json"
+      alt="Tests"
+    />
   </a>
 
   <!-- Milestones -->
