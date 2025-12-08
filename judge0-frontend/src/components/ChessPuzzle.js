@@ -619,7 +619,6 @@ function ChessPuzzle({ puzzleData, onComplete, difficulty, onNewPuzzle }) {
     
     setShowSolution(true);
     setSolutionViewed(true);
-    setShowDifficultySelector(true);
     setMessage("Solution viewed. No reward will be given. Try a new puzzle!");
     
     // Reset the board to initial position and animate the solution
@@ -660,15 +659,16 @@ function ChessPuzzle({ puzzleData, onComplete, difficulty, onNewPuzzle }) {
   };
 
   const handleTryAgain = async () => {
-    if (onNewPuzzle && selectedDifficulty) {
+    // Use the current difficulty (from session) instead of allowing user selection
+    const currentDifficulty = difficulty || "easy";
+    if (onNewPuzzle && currentDifficulty) {
       setLoading(true);
       try {
-        await onNewPuzzle(selectedDifficulty);
+        await onNewPuzzle(currentDifficulty);
         // Reset all states for new puzzle
         setUnsuccessfulMoves(0);
         setSolutionViewed(false);
         setShowSolution(false);
-        setShowDifficultySelector(false);
         setMessage("");
         setSolved(false);
         setMoveHistory([]);
@@ -694,7 +694,7 @@ function ChessPuzzle({ puzzleData, onComplete, difficulty, onNewPuzzle }) {
       <div style={{ marginBottom: "20px", textAlign: "center", width: "100%" }}>
         <h2 style={{ marginBottom: "10px" }}>Chess Puzzle Challenge</h2>
         
-        {/* Difficulty Selector */}
+        {/* Read-only Difficulty Display */}
         <div style={{ 
           marginBottom: "20px",
           display: "flex",
@@ -703,81 +703,26 @@ function ChessPuzzle({ puzzleData, onComplete, difficulty, onNewPuzzle }) {
           gap: "10px",
           flexWrap: "wrap"
         }}>
-          <label style={{ 
+          <span style={{ 
             fontSize: "14px", 
             fontWeight: 600,
             color: "#333",
             marginRight: "8px"
           }}>
             Difficulty:
-          </label>
-          <select
-            value={selectedDifficulty}
-            onChange={async (e) => {
-              const newDifficulty = e.target.value;
-              setSelectedDifficulty(newDifficulty);
-              
-              // Automatically fetch new puzzle when difficulty changes
-              if (onNewPuzzle) {
-                setLoading(true);
-                try {
-                  await onNewPuzzle(newDifficulty);
-                  // Reset all states for new puzzle
-                  setUnsuccessfulMoves(0);
-                  setSolutionViewed(false);
-                  setShowSolution(false);
-                  setShowDifficultySelector(false);
-                  setMessage("");
-                  setSolved(false);
-                  setMoveHistory([]);
-                  setSolutionMovesSAN([]);
-                } catch (error) {
-                  console.error("Error loading new puzzle:", error);
-                  setMessage("Error loading new puzzle. Please try again.");
-                  // Revert to previous difficulty on error
-                  setSelectedDifficulty(difficulty || "easy");
-                } finally {
-                  setLoading(false);
-                }
-              }
-            }}
-            disabled={loading}
-            style={{
-              padding: "8px 16px",
-              borderRadius: "6px",
-              border: "2px solid #2196F3",
-              background: loading ? "#f5f5f5" : "white",
-              color: loading ? "#999" : "#333",
-              fontSize: "14px",
-              fontWeight: 600,
-              cursor: loading ? "not-allowed" : "pointer",
-              outline: "none",
-              opacity: loading ? 0.6 : 1
-            }}
-          >
-            <option value="easy">Easy 🍀</option>
-            <option value="medium">Medium 🚀</option>
-            <option value="hard">Hard 🧠</option>
-          </select>
-          {onNewPuzzle && (
-            <button
-              onClick={handleTryAgain}
-              disabled={loading}
-              style={{
-                padding: "8px 16px",
-                background: loading ? "#ccc" : "#4CAF50",
-                color: "white",
-                border: "none",
-                borderRadius: "6px",
-                cursor: loading ? "not-allowed" : "pointer",
-                fontSize: "14px",
-                fontWeight: 600,
-                marginLeft: "10px"
-              }}
-            >
-              {loading ? "Loading..." : "🔄 New Puzzle"}
-            </button>
-          )}
+          </span>
+          <span style={{
+            padding: "8px 16px",
+            borderRadius: "6px",
+            border: "2px solid #2196F3",
+            background: "#e3f2fd",
+            color: "#1976d2",
+            fontSize: "14px",
+            fontWeight: 600,
+            textTransform: "capitalize"
+          }}>
+            {difficulty || "easy"} {difficulty === "easy" ? "🍀" : difficulty === "medium" ? "🚀" : "🧠"}
+          </span>
         </div>
         
         {loading && (
@@ -1078,57 +1023,8 @@ function ChessPuzzle({ puzzleData, onComplete, difficulty, onNewPuzzle }) {
             </div>
           )}
 
-          {/* Show difficulty selector and Try Again button */}
-          {showDifficultySelector && (
-            <div style={{
-              marginTop: "15px",
-              padding: "15px",
-              background: "#fff3cd",
-              borderRadius: "6px",
-              border: "2px solid #ffc107"
-            }}>
-              <h4 style={{ margin: "0 0 10px 0", color: "#856404" }}>Select Difficulty for New Puzzle:</h4>
-              <select
-                value={selectedDifficulty}
-                onChange={(e) => setSelectedDifficulty(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  marginBottom: "10px",
-                  borderRadius: "6px",
-                  border: "1px solid #ccc",
-                  fontSize: "14px"
-                }}
-              >
-                <option value="easy">Easy 🍀</option>
-                <option value="medium">Medium 🚀</option>
-                <option value="hard">Hard 🧠</option>
-              </select>
-              <button
-                onClick={handleTryAgain}
-                disabled={loading}
-                style={{
-                  padding: "12px 24px",
-                  background: "#4caf50",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "6px",
-                  cursor: loading ? "not-allowed" : "pointer",
-                  width: "100%",
-                  fontSize: "15px",
-                  fontWeight: 600,
-                  opacity: loading ? 0.6 : 1,
-                  transition: "background 0.2s"
-                }}
-                onMouseOver={(e) => !loading && (e.currentTarget.style.background = "#45a049")}
-                onMouseOut={(e) => !loading && (e.currentTarget.style.background = "#4caf50")}
-              >
-                {loading ? "Loading..." : "🔄 Try Again"}
-              </button>
-            </div>
-          )}
-
-          {!showDifficultySelector && (
+          {/* Reset Puzzle button - always visible */}
+          {(
             <button
               onClick={resetPuzzle}
               style={{

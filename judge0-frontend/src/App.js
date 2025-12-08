@@ -380,6 +380,15 @@ function App() {
     return groups;
   }, []);
 
+  // Initialize selectedProblem based on session difficulty (for coding challenges)
+  useEffect(() => {
+    if (session.info?.challengeType === "coding" && session.info?.difficulty && groupedProblems[session.info.difficulty]?.length > 0) {
+      const pool = groupedProblems[session.info.difficulty];
+      const random = pool[Math.floor(Math.random() * pool.length)];
+      setSelectedProblem(random);
+    }
+  }, [session.info?.difficulty, session.info?.challengeType, groupedProblems]);
+
   useEffect(() => {
     if (selectedProblem?.templates?.[language]) {
       setSourceCode(selectedProblem.templates[language]);
@@ -767,10 +776,11 @@ function App() {
               }
             }}
             onNewPuzzle={async (newDifficulty) => {
-              // Get a new puzzle with the selected difficulty
+              // Use session difficulty instead of allowing user-selected difficulty
+              const puzzleDifficulty = session.info?.difficulty || newDifficulty || "easy";
               try {
-                console.log("🔄 Fetching new puzzle with difficulty:", newDifficulty);
-                const res = await fetch(`${API_BASE}/chess/puzzle/${newDifficulty}`, {
+                console.log("🔄 Fetching new puzzle with difficulty:", puzzleDifficulty);
+                const res = await fetch(`${API_BASE}/chess/puzzle/${puzzleDifficulty}`, {
                   credentials: "include",
                 });
                 const data = await res.json();
@@ -778,7 +788,7 @@ function App() {
                 
                 if (!res.ok || !data.puzzleId) {
                   console.error("❌ Failed to fetch puzzle:", data);
-                  setModalMsg(`❌ ${data.error || `Failed to load ${newDifficulty} puzzle`}`);
+                  setModalMsg(`❌ ${data.error || `Failed to load ${puzzleDifficulty} puzzle`}`);
                   setModalTitle("Error");
                   setModalOpen(true);
                   return;
@@ -855,49 +865,71 @@ function App() {
                 boxShadow: "0 12px 36px rgba(0,0,0,0.45)"
               }}
             >
-            <h2
-              style={{
-                color: colors.accent,
-                marginBottom: 12,
-                fontSize: 18,
-                fontWeight: 700
-              }}
-            >
-              📜 Choose Difficulty
-            </h2>
-
-            {/* Difficulty Dropdown */}
-            <select
-              onChange={(e) => {
-                const diff = e.target.value;
-                if (diff) {
-                  const pool = groupedProblems[diff];
-                  const random = pool[Math.floor(Math.random() * pool.length)];
-                  setSelectedProblem(random);
-                }
-              }}
-              defaultValue=""
-              style={{
-                width: "100%",
-                marginTop: 6,
-                padding: "10px 12px",
-                borderRadius: 10,
-                background: "#0a1520",
-                color: "#e9f6ff",
-                border: `1px solid ${colors.accent}55`,
-                outline: "none",
-                cursor: "pointer",
-                fontWeight: 600
-              }}
-            >
-              <option value="" disabled>
-                Select Difficulty
-              </option>
-              <option value="easy">Easy 🍀</option>
-              <option value="medium">Medium 🚀</option>
-              <option value="hard">Hard 🧠</option>
-            </select>
-
+            {/* Difficulty Badge Header */}
+            {selectedProblem?.difficulty && (
+              <div style={{ 
+                marginBottom: 16,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "12px",
+                borderRadius: "10px",
+                background: selectedProblem.difficulty === "easy" 
+                  ? "linear-gradient(135deg, rgba(76, 175, 80, 0.15), rgba(129, 199, 132, 0.1))"
+                  : selectedProblem.difficulty === "medium"
+                  ? "linear-gradient(135deg, rgba(255, 152, 0, 0.15), rgba(255, 183, 77, 0.1))"
+                  : "linear-gradient(135deg, rgba(244, 67, 54, 0.15), rgba(239, 154, 154, 0.1))",
+                border: `2px solid ${selectedProblem.difficulty === "easy"
+                  ? "rgba(76, 175, 80, 0.3)"
+                  : selectedProblem.difficulty === "medium"
+                  ? "rgba(255, 152, 0, 0.3)"
+                  : "rgba(244, 67, 54, 0.3)"}`
+              }}>
+                <span style={{ 
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  color: colors.subtext,
+                  marginRight: "8px"
+                }}>
+                  Challenge Difficulty:
+                </span>
+                <span
+                  style={{
+                    padding: "6px 14px",
+                    borderRadius: "8px",
+                    fontSize: "14px",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.8px",
+                    background: selectedProblem.difficulty === "easy" 
+                      ? "linear-gradient(135deg, rgba(76, 175, 80, 0.25), rgba(129, 199, 132, 0.2))"
+                      : selectedProblem.difficulty === "medium"
+                      ? "linear-gradient(135deg, rgba(255, 152, 0, 0.25), rgba(255, 183, 77, 0.2))"
+                      : "linear-gradient(135deg, rgba(244, 67, 54, 0.25), rgba(239, 154, 154, 0.2))",
+                    color: selectedProblem.difficulty === "easy"
+                      ? "#81c784"
+                      : selectedProblem.difficulty === "medium"
+                      ? "#ffb74d"
+                      : "#ef9a9a",
+                    border: `1px solid ${selectedProblem.difficulty === "easy"
+                      ? "rgba(76, 175, 80, 0.5)"
+                      : selectedProblem.difficulty === "medium"
+                      ? "rgba(255, 152, 0, 0.5)"
+                      : "rgba(244, 67, 54, 0.5)"}`,
+                    boxShadow: `0 2px 8px ${selectedProblem.difficulty === "easy"
+                      ? "rgba(76, 175, 80, 0.25)"
+                      : selectedProblem.difficulty === "medium"
+                      ? "rgba(255, 152, 0, 0.25)"
+                      : "rgba(244, 67, 54, 0.25)"}`
+                  }}
+                >
+                  {selectedProblem.difficulty === "easy" && "🍀 "}
+                  {selectedProblem.difficulty === "medium" && "🚀 "}
+                  {selectedProblem.difficulty === "hard" && "🧠 "}
+                  {selectedProblem.difficulty.toUpperCase()}
+                </span>
+              </div>
+            )}
             {/* Selected Problem Display */}
             {selectedProblem && (
               <div
@@ -909,9 +941,48 @@ function App() {
                   border: `1px solid ${colors.border}`
                 }}
               >
-                <h3 style={{ color: colors.accent, margin: 0, fontSize: 18, fontWeight: 700 }}>
-                  {selectedProblem.title}
-                </h3>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                  <h3 style={{ color: colors.accent, margin: 0, fontSize: 18, fontWeight: 700 }}>
+                    {selectedProblem.title}
+                  </h3>
+                  {selectedProblem?.difficulty && (
+                    <span
+                      style={{
+                        padding: "6px 12px",
+                        borderRadius: "8px",
+                        fontSize: "12px",
+                        fontWeight: 700,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.5px",
+                        background: selectedProblem.difficulty === "easy" 
+                          ? "linear-gradient(135deg, rgba(76, 175, 80, 0.2), rgba(129, 199, 132, 0.3))"
+                          : selectedProblem.difficulty === "medium"
+                          ? "linear-gradient(135deg, rgba(255, 152, 0, 0.2), rgba(255, 183, 77, 0.3))"
+                          : "linear-gradient(135deg, rgba(244, 67, 54, 0.2), rgba(239, 154, 154, 0.3))",
+                        color: selectedProblem.difficulty === "easy"
+                          ? "#81c784"
+                          : selectedProblem.difficulty === "medium"
+                          ? "#ffb74d"
+                          : "#ef9a9a",
+                        border: `1px solid ${selectedProblem.difficulty === "easy"
+                          ? "rgba(76, 175, 80, 0.4)"
+                          : selectedProblem.difficulty === "medium"
+                          ? "rgba(255, 152, 0, 0.4)"
+                          : "rgba(244, 67, 54, 0.4)"}`,
+                        boxShadow: `0 2px 8px ${selectedProblem.difficulty === "easy"
+                          ? "rgba(76, 175, 80, 0.2)"
+                          : selectedProblem.difficulty === "medium"
+                          ? "rgba(255, 152, 0, 0.2)"
+                          : "rgba(244, 67, 54, 0.2)"}`
+                      }}
+                    >
+                      {selectedProblem.difficulty === "easy" && "🍀 "}
+                      {selectedProblem.difficulty === "medium" && "🚀 "}
+                      {selectedProblem.difficulty === "hard" && "🧠 "}
+                      {selectedProblem.difficulty.toUpperCase()}
+                    </span>
+                  )}
+                </div>
 
                 <p style={{ color: colors.text, opacity: 0.9, marginTop: 8 }}>
                   {selectedProblem.description}

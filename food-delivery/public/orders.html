@@ -147,6 +147,33 @@
       color: #c92a2a;
     }
 
+    .status-refunded {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    /* Refund status badges */
+    .refund-badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+    }
+
+    .refund-pending {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .refund-approved {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .refund-rejected {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
     /* Rating stars */
     .rating-stars {
       display: flex;
@@ -327,6 +354,34 @@
     </div>
   </div>
 
+  <!-- Refund Request Modal -->
+  <div class="modal fade" id="refundModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h6 class="modal-title">💰 Request Refund</h6>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p class="text-muted small mb-3">Please explain why you're requesting a refund for this order.</p>
+          <input type="hidden" id="refundOrderId" value="">
+          <div class="mb-3">
+            <label for="refundReason" class="form-label">Reason for refund <span class="text-danger">*</span></label>
+            <textarea class="form-control" id="refundReason" rows="4" placeholder="Please describe the issue with your order..." required></textarea>
+          </div>
+          <div id="refundError" class="alert alert-danger d-none"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="button" class="btn btn-warning btn-sm" id="submitRefundBtn" onclick="submitRefundRequest()">
+            <span id="refundBtnText">Submit Request</span>
+            <span id="refundBtnSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- FOOTER -->
   <footer class="border-top bg-white">
     <div class="container py-5">
@@ -422,6 +477,7 @@
       if (["out_for_delivery", "enroute"].includes(s)) return "status-out_for_delivery";
       if (["delivered", "completed"].includes(s)) return "status-delivered";
       if (["cancelled", "canceled"].includes(s)) return "status-cancelled";
+      if (["refunded"].includes(s)) return "status-refunded";
       return "status-placed";
     };
     const statusLabel = s => String(s || "placed").replaceAll("_", " ").replace(/\b\w/g, c => c.toUpperCase());
@@ -458,7 +514,7 @@
       } catch { return null; }
     }
 
-    function orderCard(o, restaurantName, existingRating = null) {
+    function orderCard(o, restaurantName, existingRating = null, existingRefund = null) {
       const rName = restaurantName || o.restaurantName || "Restaurant";
       const itemsRows = (o.items || []).map(it => `
     <tr>
@@ -470,6 +526,38 @@
 
       const lowerStatus = String(o.status || "").toLowerCase();
       const challengeStatus = (o.challengeStatus || "").toLowerCase();
+      
+      // Build refund status badge and button
+      let refundSection = '';
+      if (existingRefund || lowerStatus === 'refunded') {
+        // Order is refunded or has refund request
+        if (lowerStatus === 'refunded' && !existingRefund) {
+          refundSection = `
+            <div class="alert alert-success mt-3" role="alert">
+              <strong>✅ Order Refunded</strong><br/>
+              <small>This order has been refunded.</small>
+            </div>`;
+        } else if (existingRefund) {
+          const refundStatus = existingRefund.status;
+          const statusClass = refundStatus === 'approved' ? 'refund-approved' : 
+                             refundStatus === 'rejected' ? 'refund-rejected' : 'refund-pending';
+          const statusIcon = refundStatus === 'approved' ? '✅' : 
+                            refundStatus === 'rejected' ? '❌' : '⏳';
+          const statusLabel = refundStatus.charAt(0).toUpperCase() + refundStatus.slice(1);
+          
+          refundSection = `
+            <div class="alert ${refundStatus === 'approved' ? 'alert-success' : refundStatus === 'rejected' ? 'alert-danger' : 'alert-warning'} mt-3" role="alert">
+              <strong>${statusIcon} Refund ${statusLabel}</strong><br/>
+              <small>Amount: ${money(existingRefund.amount)}</small><br/>
+              ${existingRefund.notes ? `<small class="text-muted">Note: ${existingRefund.notes}</small>` : ''}
+            </div>`;
+        }
+      } else {
+        refundSection = `
+          <button class="btn btn-outline-warning btn-sm" onclick="showRefundModal('${o._id}', '${money(o.total)}')">
+            💰 Request Refund
+          </button>`;
+      }
 
       let cashbackBanner = "";
 
@@ -614,9 +702,10 @@
                 `}
               </div>
             </div>` : ""}
-            <div class="d-flex gap-2 mt-2">
+            <div class="d-flex flex-wrap gap-2 mt-2">
               <button class="btn btn-outline-secondary btn-sm" data-reorder="${o._id}">Order again</button>
               <button class="btn btn-outline-primary btn-sm" onclick="copyOrderId('${o._id}')">Copy ID</button>
+              ${refundSection}
             </div>
           </div>
         </div>
@@ -699,9 +788,25 @@
         return;
       }
 
-      // Fill missing restaurant names and check for existing ratings
+      // Fill missing restaurant names and check for existing ratings and refunds
       const cache = new Map();
       const ratingCache = new Map();
+      const refundCache = new Map();
+      
+      // Fetch all user's refunds in one call
+      try {
+        const refundsRes = await fetch(`${API_BASE}/refunds`, { credentials: 'include' });
+        if (refundsRes.ok) {
+          const refunds = await refundsRes.json();
+          refunds.forEach(r => {
+            const orderId = r.orderId?._id || r.orderId;
+            refundCache.set(String(orderId), r);
+          });
+        }
+      } catch (e) {
+        console.error('Error fetching refunds:', e);
+      }
+      
       await Promise.all(orders.map(async o => {
         const key = String(o.restaurantId || "");
         if (!o.restaurantName && key && !cache.has(key)) {
@@ -721,7 +826,7 @@
         }
       }));
 
-      wrap.innerHTML = orders.map(o => orderCard(o, cache.get(String(o.restaurantId)), ratingCache.get(String(o._id)))).join('');
+      wrap.innerHTML = orders.map(o => orderCard(o, cache.get(String(o.restaurantId)), ratingCache.get(String(o._id)), refundCache.get(String(o._id)))).join('');
       wireReorderButtons(orders);
       updateCartCount();
     }
@@ -1027,6 +1132,76 @@
         alert("Error starting challenge");
       }
     }
+
+    // === Refund Request Functions ===
+    const refundModalEl = document.getElementById('refundModal');
+    const refundModal = new bootstrap.Modal(refundModalEl);
+    
+    window.showRefundModal = function(orderId, orderTotal) {
+      document.getElementById('refundOrderId').value = orderId;
+      document.getElementById('refundReason').value = '';
+      document.getElementById('refundError').classList.add('d-none');
+      document.getElementById('refundBtnText').textContent = `Submit Request`;
+      document.getElementById('submitRefundBtn').disabled = false;
+      refundModal.show();
+    };
+
+    window.submitRefundRequest = async function() {
+      const orderId = document.getElementById('refundOrderId').value;
+      const reason = document.getElementById('refundReason').value.trim();
+      const errorEl = document.getElementById('refundError');
+      const btnText = document.getElementById('refundBtnText');
+      const btnSpinner = document.getElementById('refundBtnSpinner');
+      const submitBtn = document.getElementById('submitRefundBtn');
+      
+      // Validate
+      if (!reason) {
+        errorEl.textContent = 'Please provide a reason for your refund request.';
+        errorEl.classList.remove('d-none');
+        return;
+      }
+      
+      if (reason.length < 10) {
+        errorEl.textContent = 'Please provide more detail about why you need a refund (at least 10 characters).';
+        errorEl.classList.remove('d-none');
+        return;
+      }
+      
+      // Show loading state
+      btnText.classList.add('d-none');
+      btnSpinner.classList.remove('d-none');
+      submitBtn.disabled = true;
+      errorEl.classList.add('d-none');
+      
+      try {
+        const res = await fetch(`${API_BASE}/refunds/request`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ orderId, reason })
+        });
+        
+        const data = await res.json();
+        
+        if (res.ok && data.ok) {
+          refundModal.hide();
+          // Show success message and reload orders
+          alert('Refund request submitted successfully! The restaurant will review your request.');
+          loadOrders();
+        } else {
+          errorEl.textContent = data.error || 'Failed to submit refund request. Please try again.';
+          errorEl.classList.remove('d-none');
+        }
+      } catch (e) {
+        console.error('Refund request error:', e);
+        errorEl.textContent = 'Error submitting refund request. Please try again.';
+        errorEl.classList.remove('d-none');
+      } finally {
+        btnText.classList.remove('d-none');
+        btnSpinner.classList.add('d-none');
+        submitBtn.disabled = false;
+      }
+    };
 
     // === Fetch and show coupons ===
     async function loadCoupons() {
