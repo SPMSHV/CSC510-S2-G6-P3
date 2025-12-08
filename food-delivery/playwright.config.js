@@ -8,7 +8,7 @@ export default defineConfig({
   webServer: {
     command: 'npm run start:test',
     port: 3000,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: true,
     timeout: 180_000,
     env: {
       // make server.js listen even if NODE_ENV=test
