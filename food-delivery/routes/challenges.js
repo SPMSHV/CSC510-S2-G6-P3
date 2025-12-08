@@ -19,11 +19,9 @@ router.post("/start", async (req, res) => {
     if (!userId) return res.status(401).json({ error: "Not logged in" });
     if (!orderId) return res.status(400).json({ error: "orderId required" });
 
-    // 🎯 ADAPTIVE DIFFICULTY: If difficulty not provided, calculate it based on user performance
-    let finalDifficulty = difficulty;
-    if (!finalDifficulty) {
-      finalDifficulty = await calculateAdaptiveDifficulty(userId);
-    }
+    // 🎯 ADAPTIVE DIFFICULTY: Use provided difficulty if specified (backward compatibility), 
+    // otherwise calculate difficulty based on user performance
+    const finalDifficulty = difficulty || await calculateAdaptiveDifficulty(userId);
 
     // 🎯 CHESS SUPPORT: Check if challenge type is chess
     const { challengeType = "coding" } = req.body || {};

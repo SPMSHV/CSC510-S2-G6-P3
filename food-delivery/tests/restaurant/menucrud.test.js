@@ -53,6 +53,7 @@ async function tryEdit(menuId, payload) {
     ['post',   `/api/menu/update`,            { id: menuId, ...payload }],
     ['put',    `/api/menu`,                   { id: menuId, ...payload }],
     // sometimes under dashboard
+    ['put',    `/api/restaurant-dashboard/menu/${menuId}`, payload],
     ['patch',  `/api/restaurant-dashboard/menu/${menuId}`, payload],
     ['post',   `/api/restaurant-dashboard/menu/${menuId}/edit`, payload],
   ];

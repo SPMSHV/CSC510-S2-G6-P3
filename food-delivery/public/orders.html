@@ -999,7 +999,7 @@
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ orderId, difficulty: "easy", challengeType })
+          body: JSON.stringify({ orderId, challengeType })
         });
 
         if (!res.ok) {
