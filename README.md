@@ -14,7 +14,7 @@
 
   <!-- Milestones -->
   <a href="https://github.com/SPMSHV/CSC510-S2-G6-P3">
-    <img src="https://img.shields.io/badge/milestones-9%20completed-success" alt="Milestones" />
+    <img src="https://img.shields.io/badge/milestones-5%20completed-success" alt="Milestones" />
   </a>
 
   <!-- License -->
@@ -67,7 +67,7 @@ It’s where every byte earns you a bite!
 
 BiteCode has been developed as part of CSC510 - Software Engineering project at NC State University to demonstrate the design and implementation of an interactive, dual-purpose web platform.
 
-This repository (proj3) extends the original BiteCode project (proj2) with 9 new milestones, building upon the foundation created by the previous team.
+This repository (proj3) extends the original BiteCode project (proj2) with 5 new milestones, building upon the foundation created by the previous team.
 
 ### Previous Work (proj2)
 The original BiteCode project was developed by Team sec2_g3 and included:
@@ -78,16 +78,13 @@ The original BiteCode project was developed by Team sec2_g3 and included:
 - Modular backend architecture with comprehensive testing
 
 ### Current Work (proj3)
-This repository extends proj2 with 9 new milestones:
-1. **Adaptive Challenge Difficulty** - Dynamic difficulty adjustment based on user performance
-2. **Chess Engine Integration** - Chess puzzles as alternative to coding challenges
-3. **Geolocation Tracking** - Real-time driver location and ETA calculation
-4. **UI/UX & Stability Enhancements** - Performance optimizations and UI consistency
-5. **Payment & Security Upgrades** - Payment verification, refunds, and audit trails
-6. **Email Notifications** - Order status update emails
-7. **Order Rating System** - Customer ratings and reviews
-8. **Search & Filter Enhancements** - Advanced search for restaurants and menu items
-9. **Analytics Dashboard** - Restaurant and system-wide analytics
+This repository extends proj2 with 5 new milestones:
+1. **Payment & Security Upgrades** - Payment verification and refunds
+2. **Analytics Dashboard** - Restaurant and system-wide analytics
+3. **Chess Engine Integration** - Chess puzzles as alternative to coding challenges
+4. **Adaptive Challenge Difficulty** - Dynamic difficulty adjustment based on user performance
+5. **Order Rating System** - Customer ratings
+
 
 It combines two main components:
 
@@ -105,7 +102,7 @@ The repository also includes an **Archived** directory that stores earlier proto
 
 ## 🖥️ Demo
 
-[![Watch the demo](https://img.youtube.com/vi/nOuNoA7Y1ng/hqdefault.jpg)](https://youtu.be/nOuNoA7Y1ng)
+[![Watch the demo](https://img.youtube.com/vi/nOuNoA7Y1ng/hqdefault.jpg)](https://youtu.be/Vyr7kDD9bAk)
 
 ---
 
@@ -118,29 +115,6 @@ The repository also includes an **Archived** directory that stores earlier proto
 
 ---
 
-## 🌟 Why Choose Our Project?
-[![Watch the demo](https://img.youtube.com/vi/kKXPadUnOhY/hqdefault.jpg)](https://youtu.be/kKXPadUnOhY)
-
-Our project — **BiteCode** — blends **Food Delivery**, **Gamified Coding Challenges**, and an **Interactive Judge0 Frontend** into one cohesive full-stack system.  
-It’s not just a project to run — it’s a project you can *grow*, *extend*, and *learn from*.
-
-### 🚀 Why It’s Worth Contributing
-- **Modern Tech Stack:**  
-  Built with **MongoDB, Express.js, React, Node.js, Bootstrap, and Jest**, it offers hands-on experience across the entire MERN stack — plus real API integration with **Judge0**, making it ideal for full-stack and DevOps learners alike.
-
-- **Strong Foundation, Easy to Extend:**  
-  The modular backend and decoupled frontend make adding new ideas seamless — you can go beyond food delivery.  
-  💡 *Example:* Replace coding challenges with your **chess engine** — users could solve chess puzzles to earn discounts and rewards, leveraging the same “challenge” architecture!
-
-- **Comprehensive Testing (161 Tests!):**  
-  The system is battle-tested with **161 Jest + Pytest testcases**, covering:
-  - Customer, restaurant, driver, and payment workflows  
-  - Coupon and challenge APIs  
-  - Frontend UI interactions and API integration  
-  - Judge0 backend execution scenarios across multiple languages  
-  - Core edge cases: authentication guards, invalid inputs, runtime/compile errors  
-  This extensive coverage ensures stability and a reliable foundation for future enhancements.
-
 ### ✨ Completed Enhancements (proj3)
 All of the following features have been implemented in this repository:
 
@@ -150,29 +124,17 @@ All of the following features have been implemented in this repository:
 2. **✅ Chess Engine Integration:**  
    Integrated chess.js library — users can solve chess puzzles to **earn discounts** on their orders, with puzzles available in easy, medium, and hard difficulties.
 
-3. **✅ Driver Geolocation Tracking:**  
-   HTML5 Geolocation API integration enables live **driver location tracking**, ETA calculation, and real-time order tracking.
+3. **✅ Payment & Security Upgrades:**  
+   Payment verification and **refund management** for critical financial transactions
 
-4. **✅ UI/UX & Stability Enhancements:**  
-   Improved responsiveness, performance optimizations, standardized UI components, and enhanced dashboard consistency.
-
-5. **✅ Payment & Security Upgrades:**  
-   Payment verification, **refund management**, secure transaction logs, and **audit trails** for all critical operations.
-
-6. **✅ Email Notifications:**  
-   Automated email notifications for order confirmations and status updates.
-
-7. **✅ Order Rating System:**  
+4. **✅ Order Rating System:**  
    Customer rating and review system with separate food and delivery ratings.
 
-8. **✅ Search & Filter Enhancements:**  
-   Advanced search with filters for restaurants and menu items.
-
-9. **✅ Analytics Dashboard:**  
-   Comprehensive analytics for restaurants and system-wide insights.
+5. **✅ Analytics Dashboard:**  
+   Comprehensive analytics for restaurants and system-wide insights
 
 ### 📈 Code Quality & Coverage
-- **Extensive Testing:** 122 unit, integration, and end-to-end testcases across JavaScript (all passing).  
+- **Extensive Testing:** 230 unit, integration, and end-to-end testcases across JavaScript (all passing).  
 - **Backward Compatibility:** All existing functionality from proj2 maintained and tested.  
 - **Structured Documentation:** Each module (models, routes, utilities, and frontend tests) has detailed documentation.  
 - **Clear Contribution Path:** Well-defined `CODE_OF_CONDUCT.md` and `CONTRIBUTING.md` files guide newcomers through setup and best practices.
@@ -330,7 +292,7 @@ The original BiteCode project was developed by:
 | Mahek Kantharia | mrkantha@ncsu.edu |
 
 ### Current Contributors (proj3 - Milestones Extension)
-This repository extends proj2 with 9 new milestones, implemented by:
+This repository extends proj2 with 5 new milestones, implemented by:
 
 | Name | Email |
 |------|-------|
@@ -369,26 +331,7 @@ This repository extends proj2 with 9 new milestones, implemented by:
   - React-based chess board interface using react-chessboard
   - Same reward system as coding challenges (5%, 10%, 20% cashback)
 
-#### 3. Geolocation Tracking ✅
-- **Implemented**: Real-time driver location tracking and ETA calculation
-- **Features**:
-  - HTML5 Geolocation API integration for driver location updates
-  - Automatic location updates every 30 seconds when driver is active
-  - Real-time order tracking with driver location and estimated delivery time
-  - ETA calculation using Haversine formula for distance calculation
-  - Location history tracking for orders
-
-#### 4. UI/UX & Stability Enhancements ✅
-- **Implemented**: Performance optimizations and UI consistency improvements
-- **Features**:
-  - Response compression for improved performance
-  - Database indexes for optimized queries
-  - Standardized CSS for consistent UI across all dashboards
-  - Improved loading states and error messages
-  - Enhanced mobile responsiveness
-  - Smooth transitions and hover effects
-
-#### 5. Payment & Security Upgrades ✅
+#### 3. Payment & Security Upgrades ✅
 - **Implemented**: Comprehensive payment verification and refund management
 - **Features**:
   - Payment verification endpoints
@@ -398,16 +341,7 @@ This repository extends proj2 with 9 new milestones, implemented by:
   - Restaurant admin approval workflow for refunds
   - All sensitive data (passwords, tokens, card numbers) automatically sanitized before logging
 
-#### 6. Email Notifications ✅
-- **Implemented**: Automated email notifications for order updates
-- **Features**:
-  - Order confirmation emails when order is placed
-  - Status update emails (preparing, ready_for_pickup, out_for_delivery)
-  - Delivery confirmation emails
-  - Mock implementation ready for production integration (SendGrid, AWS SES, Nodemailer)
-  - Non-blocking email service (failures don't affect order processing)
-
-#### 7. Order Rating System ✅
+#### 4. Order Rating System ✅
 - **Implemented**: Customer rating and review system
 - **Features**:
   - Overall rating (1-5 stars) for orders
@@ -417,17 +351,7 @@ This repository extends proj2 with 9 new milestones, implemented by:
   - Real-time rating updates
   - One rating per order (prevents duplicates)
 
-#### 8. Search & Filter Enhancements ✅
-- **Implemented**: Advanced search and filtering for restaurants and menu items
-- **Features**:
-  - Text search in restaurant name and cuisine
-  - Filter by cuisine type
-  - Minimum rating filter
-  - Sort by rating, name, delivery fee, or ETA
-  - Menu item search across restaurants
-  - Price range filtering for menu items
-
-#### 9. Analytics Dashboard ✅
+#### 5. Analytics Dashboard ✅
 - **Implemented**: Comprehensive analytics for restaurants and system
 - **Features**:
   - Restaurant-specific analytics (orders, revenue, popular items)
