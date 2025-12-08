@@ -102,6 +102,36 @@ router.get("/", async (req, res) => {
 });
 
 /**
+ * GET /api/refunds/restaurant
+ * Get refund requests for orders belonging to the logged-in restaurant
+ */
+router.get("/restaurant", async (req, res) => {
+  try {
+    // Check for restaurant admin session
+    const restaurantId = req.session.restaurantId;
+    if (!restaurantId) {
+      return res.status(401).json({ error: "Not logged in as restaurant" });
+    }
+
+    // Find all orders for this restaurant
+    const restaurantOrders = await Order.find({ restaurantId }).select('_id').lean();
+    const orderIds = restaurantOrders.map(o => o._id);
+
+    // Find all refunds for these orders
+    const refunds = await Refund.find({ orderId: { $in: orderIds } })
+      .populate('orderId', 'status total createdAt items')
+      .populate('userId', 'name email')
+      .sort({ requestedAt: -1 })
+      .lean();
+
+    res.json(refunds);
+  } catch (err) {
+    console.error("Error fetching restaurant refunds:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/**
  * GET /api/refunds/:id
  * Get specific refund status
  */
@@ -166,10 +196,11 @@ router.post("/:id/approve", async (req, res) => {
     if (notes) refund.notes = notes;
     await refund.save();
 
-    // Update order payment status (add refund flag)
+    // Update order payment status and order status to refunded
     await Order.findByIdAndUpdate(refund.orderId._id, {
       $set: { 
         paymentStatus: 'refunded',
+        status: 'refunded',
         refundedAt: new Date()
       }
     });

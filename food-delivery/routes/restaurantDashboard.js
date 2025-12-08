@@ -223,7 +223,16 @@ router.patch("/orders/:id/status", requireRestaurant, async (req, res) => {
       return res.status(400).json({ error: "status is required" });
     }
 
-    // Restrict restaurant’s allowed statuses
+    // Check if order exists and is not refunded
+    const existingOrder = await Order.findById(id);
+    if (!existingOrder) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+    if (existingOrder.status === 'refunded') {
+      return res.status(400).json({ error: "Cannot update status of a refunded order" });
+    }
+
+    // Restrict restaurant's allowed statuses
     const allowedStatuses = ["preparing", "ready_for_pickup", "out_for_delivery"];
     if (!allowedStatuses.includes(status)) {
       return res.status(403).json({ error: "Unauthorized status update" });

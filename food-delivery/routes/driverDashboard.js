@@ -64,7 +64,7 @@ router.get('/orders/new', async (req, res) => {
       return res.json([]); // no new orders shown
     }
 
-    //If active, show available orders
+    //If active, show available orders (exclude refunded)
     const orders = await Order.find({
       status: { $in: ["preparing", "ready_for_pickup"] },
       driverId: null
@@ -92,6 +92,16 @@ router.get('/orders/new', async (req, res) => {
 router.post('/orders/accept/:id', async (req, res) => {
   try {
     const driverId = req.session.driverId;
+    
+    // Check if order is refunded before accepting
+    const existingOrder = await Order.findById(req.params.id);
+    if (!existingOrder) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    if (existingOrder.status === 'refunded') {
+      return res.status(400).json({ error: 'Cannot accept a refunded order' });
+    }
+    
     const order = await Order.findOneAndUpdate(
       { _id: req.params.id, driverId: null },   // only if still unassigned
       { driverId, deliveryPayment: 5 },
@@ -145,6 +155,11 @@ router.post('/orders/delivered/:id', async (req, res) => {
     const order = await Order.findById(req.params.id);
     if (!order) {
       return res.status(404).json({ error: 'Order not found' });
+    }
+
+    // Check if order is refunded - cannot deliver refunded orders
+    if (order.status === 'refunded') {
+      return res.status(400).json({ error: 'Cannot deliver a refunded order' });
     }
 
     // Relax restriction — allow marking delivered even if restaurant missed "Out for Delivery"

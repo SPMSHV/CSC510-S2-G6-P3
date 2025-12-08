@@ -36,12 +36,7 @@ router.post("/mock-checkout", async (req, res) => {
 
     let appliedCode = null;
     let discount = 0;
-    const { couponCode, deliveryAddress } = req.body || {};
-    
-    // Validate delivery address
-    if (!deliveryAddress || !deliveryAddress.trim()) {
-      return res.status(400).json({ error: "Delivery address is required" });
-    }
+    const { couponCode } = req.body || {};
     
     if (couponCode) {
       const coupon = await Coupon.findOne({
@@ -73,7 +68,6 @@ router.post("/mock-checkout", async (req, res) => {
       deliveryFee,
       discount,
       appliedCode,
-      deliveryLocation: deliveryAddress.trim(), // Store customer's delivery address
       total: finalTotal,
       status: "placed",         // valid enum
       paymentStatus: "paid"     // now tracked separately

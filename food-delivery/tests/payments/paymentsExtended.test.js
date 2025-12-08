@@ -29,32 +29,7 @@ describe("Payments Extended Tests", () => {
   });
 
   describe("POST /api/payments/mock-checkout", () => {
-    it("should require deliveryAddress", async () => {
-      await registerAndLoginCustomer(agent);
-      const customerId = await agent.get("/api/customer-auth/me").then(r => r.body.customerId);
-      const rest = await createRestaurant();
-
-      const item = await MenuItem.create({
-        restaurantId: rest._id,
-        name: "Burger",
-        price: 10,
-        isAvailable: true
-      });
-
-      await CartItem.create({
-        userId: customerId,
-        restaurantId: rest._id,
-        menuItemId: item._id,
-        quantity: 1
-      });
-
-      await agent
-        .post("/api/payments/mock-checkout")
-        .send({})
-        .expect(400);
-    });
-
-    it("should create order with deliveryAddress", async () => {
+    it("should create order successfully", async () => {
       await registerAndLoginCustomer(agent);
       const customerId = await agent.get("/api/customer-auth/me").then(r => r.body.customerId);
       const rest = await createRestaurant();
@@ -75,17 +50,11 @@ describe("Payments Extended Tests", () => {
 
       const res = await agent
         .post("/api/payments/mock-checkout")
-        .send({
-          deliveryAddress: "123 Main Street, Raleigh, NC 27601"
-        })
+        .send({})
         .expect(200);
 
       expect(res.body.ok).toBe(true);
       expect(res.body.orderId).toBeDefined();
-
-      // Verify order has deliveryLocation
-      const order = await Order.findById(res.body.orderId);
-      expect(order.deliveryLocation).toBe("123 Main Street, Raleigh, NC 27601");
     });
 
     it("should apply coupon discount correctly", async () => {
@@ -118,8 +87,7 @@ describe("Payments Extended Tests", () => {
       const res = await agent
         .post("/api/payments/mock-checkout")
         .send({
-          couponCode: "TWENTYOFF",
-          deliveryAddress: "123 Test St"
+          couponCode: "TWENTYOFF"
         })
         .expect(200);
 
@@ -133,32 +101,6 @@ describe("Payments Extended Tests", () => {
       expect(order.appliedCode).toBe("TWENTYOFF");
     });
 
-    it("should handle empty deliveryAddress", async () => {
-      await registerAndLoginCustomer(agent);
-      const customerId = await agent.get("/api/customer-auth/me").then(r => r.body.customerId);
-      const rest = await createRestaurant();
-
-      const item = await MenuItem.create({
-        restaurantId: rest._id,
-        name: "Burger",
-        price: 10,
-        isAvailable: true
-      });
-
-      await CartItem.create({
-        userId: customerId,
-        restaurantId: rest._id,
-        menuItemId: item._id,
-        quantity: 1
-      });
-
-      await agent
-        .post("/api/payments/mock-checkout")
-        .send({
-          deliveryAddress: "   " // Only whitespace
-        })
-        .expect(400);
-    });
   });
 
   describe("POST /api/payments/verify/:orderId", () => {

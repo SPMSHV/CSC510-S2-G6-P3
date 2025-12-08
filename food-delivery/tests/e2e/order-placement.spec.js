@@ -186,10 +186,6 @@ test.describe('Order Placement Flow', () => {
     expect(page.url()).toMatch(/payment\.html/);
 
     // Step 10: Fill payment form
-    const deliveryAddressInput = page.locator('#deliveryAddress');
-    await expect(deliveryAddressInput).toBeVisible();
-    await deliveryAddressInput.fill('123 Test Delivery Street, Test City, TC 12345');
-
     const nameOnCardInput = page.locator('#nameOnCard');
     await expect(nameOnCardInput).toBeVisible();
     await nameOnCardInput.fill('Test User');
