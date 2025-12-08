@@ -50,8 +50,7 @@ test("POST /api/payments/mock-checkout -> success, creates paid order, clears ca
   });
 
   const r = await agent.post("/api/payments/mock-checkout").send({ 
-    couponCode: "TENOFF",
-    deliveryAddress: "123 Test Street, Test City"
+    couponCode: "TENOFF"
   });
   expect(r.status).toBe(200);
   expect(r.body.ok).toBe(true);
@@ -72,8 +71,7 @@ test("POST /api/payments/mock-checkout -> ignores unknown coupon and still succe
   await CartItem.create({ userId: customerId, restaurantId: rest._id, menuItemId: item._id, quantity: 1 });
 
   const r = await agent.post("/api/payments/mock-checkout").send({ 
-    couponCode: "NOPE",
-    deliveryAddress: "123 Test Street, Test City"
+    couponCode: "NOPE"
   });
   expect(r.status).toBe(200);
   expect(r.body.ok).toBe(true);
@@ -88,9 +86,7 @@ test("POST /api/payments/mock-checkout -> 500 when DB throws", async () => {
   await CartItem.create({ userId: customerId, restaurantId: rest._id, menuItemId: item._id, quantity: 1 });
 
   const spy = jest.spyOn(Order, "create").mockRejectedValueOnce(new Error("boom")); // <-- simpler spy
-  const r = await agent.post("/api/payments/mock-checkout").send({ 
-    deliveryAddress: "123 Test Street, Test City"
-  });
+  const r = await agent.post("/api/payments/mock-checkout").send({});
   spy.mockRestore();
 
   expect([500,503].includes(r.status)).toBe(true);
