@@ -8,12 +8,17 @@ import { fileURLToPath } from "url";
 import Restaurant from "../models/Restaurant.js";
 import MenuItem from "../models/MenuItem.js";
 import User from "../models/User.js";
+import RestaurantAdmin from "../models/RestaurantAdmin.js";
+import CustomerAuth from "../models/CustomerAuth.js";
+import UserPerformance from "../models/UserPerformance.js";
+import bcrypt from "bcrypt";
 
 dotenv.config();
 
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/food_delivery_app";
 const CLEAR_USERS = /^true$/i.test(process.env.CLEAR_USERS || "false");
-let SEED = process.env.SEED ? Number(process.env.SEED) : null;
+// Use fixed seed for deterministic results (can be overridden via env)
+let SEED = process.env.SEED ? Number(process.env.SEED) : 12345;
 
 function rnd(){ if(SEED==null) return Math.random(); SEED=(SEED*1664525+1013904223)%4294967296; return SEED/4294967296; }
 const pick = (arr)=>arr[Math.floor(rnd()*arr.length)];
@@ -21,9 +26,9 @@ const shuffle = (arr)=>{ for(let i=arr.length-1;i>0;i--){ const j=Math.floor(rnd
 const uniqBy = (arr, keyFn)=>{ const s=new Set(); return arr.filter(x=>{const k=keyFn(x); if(s.has(k)) return false; s.add(k); return true;}); };
 const price = (min,max,step=0.5)=> Math.round(((min + rnd()*(max-min))/step))*step;
 
-const NUM_RESTAURANTS = 25;
-const ITEMS_PER_RESTAURANT = 15;
-const SHARED_PER_RESTAURANT = 4;
+const NUM_RESTAURANTS = 5;
+const ITEMS_PER_RESTAURANT = 12;
+const SHARED_PER_RESTAURANT = 2;
 const UNIQUE_PER_RESTAURANT = ITEMS_PER_RESTAURANT - SHARED_PER_RESTAURANT;
 
 const cuisines = [
@@ -62,40 +67,121 @@ const sharedMenuPool = [
   { name:"Cheesecake", description:"Classic NY slice", base:[4.99,6.99], imageUrl:"https://images.unsplash.com/photo-1505252585461-04db1eb84625?q=80&w=800&auto=format&fit=crop" },
   { name:"Garlic Bread", description:"Toasted, buttery, garlicky", base:[3.49,5.49], imageUrl:"https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=800&auto=format&fit=crop" },
   { name:"Iced Tea", description:"Fresh brewed", base:[1.49,2.49], imageUrl:"https://images.unsplash.com/photo-1532634896-26909d0d4b6a?q=80&w=800&auto=format&fit=crop" },
-  { name:"Water Bottle", description:"Still water 500ml", base:[0.99,1.49], imageUrl:"https://images.unsplash.com/photo-1526404802712-97b70d1b1b3c?q=80&w=800&auto=format&fit=crop" }
+  { name:"Water Bottle", description:"Still water 500ml", base:[0.99,1.49], imageUrl:"https://images.unsplash.com/photo-1616118132534-381148898bb4?q=80&w=2564&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" }
 ];
 
-// 30 unique covers → use first 25
-const RESTAURANT_UNIQUE_IMAGES = [
-  "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1543353071-10c8ba85a904?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1563245372-f21724e3856d?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1553621042-f6e147245754?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1601924582971-c9e8eafc0d9b?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1498654896293-37aacf113fd9?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1552332386-f8dd00dc2f85?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1590736969955-71b1f4bf3a3a?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1546554137-f86b9593a222?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1550547660-d9450f859349?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1546069901-5a6b3d7c51b1?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1540189549336-e6e99c3679fe?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1627308595229-7830a5c91f9f?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1498579150354-977475b7ea0b?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1605478601423-3a4c34c7f9ea?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1506354666786-959d6d497f1a?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1512058564366-18510be2db19?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1553621042-f6e147245754?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1541414779316-956d4d7b2a3f?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1589308078056-f04f0b3cdebe?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1617191519400-7d2e3fdc0a67?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1490818387583-1baba5e638af?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1562967916-eb82221dfb36?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=1600&auto=format&fit=crop",
-  "https://images.unsplash.com/photo-1484723091739-30a097e8f929?q=80&w=1600&auto=format&fit=crop"
+// Predefined restaurants with specific images and details for deterministic seeding
+const PREDEFINED_RESTAURANTS = [
+  {
+    name: "Spice Garden",
+    cuisine: "Indian",
+    imageUrl: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1600&auto=format&fit=crop",
+    address: "123 Main St, Raleigh, NC 27601",
+    rating: 4.5,
+    deliveryFee: 2.99,
+    menuItems: [
+      { name: "Butter Chicken", description: "Creamy tomato-based curry with tender chicken", price: 14.99, imageUrl: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Paneer Tikka", description: "Grilled cottage cheese with spices", price: 12.99, imageUrl: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Garlic Naan", description: "Fresh baked bread with garlic and herbs", price: 3.99, imageUrl: "https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Dal Makhani", description: "Creamy black lentils cooked overnight", price: 11.99, imageUrl: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Chicken Biryani", description: "Fragrant basmati rice with spiced chicken", price: 15.99, imageUrl: "https://images.unsplash.com/photo-1631452180519-c014fe946bc7?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Aloo Paratha", description: "Stuffed flatbread with spiced potatoes", price: 5.99, imageUrl: "https://images.unsplash.com/photo-1601050690597-df0568f70950?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Chole Bhature", description: "Spiced chickpeas with fried bread", price: 8.99, imageUrl: "https://images.unsplash.com/photo-1585937421612-70a008356fbe?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Rogan Josh", description: "Aromatic lamb curry from Kashmir", price: 16.99, imageUrl: "https://images.unsplash.com/photo-1565557623262-b51c2513a641?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Palak Paneer", description: "Spinach curry with cottage cheese", price: 12.49, imageUrl: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Gulab Jamun", description: "Sweet milk dumplings in rose syrup", price: 4.99, imageUrl: "https://images.unsplash.com/photo-1606313564200-e75d5e30476b?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Fries", description: "Crispy golden fries", price: 3.99, imageUrl: "https://images.unsplash.com/photo-1541599540903-216a46ca1dc0?q=80&w=800&auto=format&fit=crop" },
+      { name: "Coke", description: "Chilled soft drink", price: 2.49, imageUrl: "https://images.unsplash.com/photo-1541976076758-347942db1974?q=80&w=800&auto=format&fit=crop" }
+    ]
+  },
+  {
+    name: "Golden Bistro",
+    cuisine: "Italian",
+    imageUrl: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=1600&auto=format&fit=crop",
+    address: "456 Oak Ave, Cary, NC 27602",
+    rating: 4.7,
+    deliveryFee: 3.49,
+    menuItems: [
+      { name: "Margherita Pizza", description: "Classic pizza with tomato, mozzarella, and basil", price: 13.99, imageUrl: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Pasta Alfredo", description: "Creamy fettuccine with parmesan sauce", price: 14.99, imageUrl: "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Lasagna", description: "Layered pasta with meat and cheese", price: 16.99, imageUrl: "https://images.unsplash.com/photo-1574894709920-11b28e7367e3?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Bruschetta", description: "Toasted bread with tomatoes and basil", price: 8.99, imageUrl: "https://images.unsplash.com/photo-1572441713132-51c75654db73?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Carbonara", description: "Creamy pasta with bacon and eggs", price: 15.49, imageUrl: "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Four Cheese Pizza", description: "Mozzarella, gorgonzola, parmesan, and fontina", price: 16.99, imageUrl: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Calzone", description: "Folded pizza with ricotta and mozzarella", price: 14.49, imageUrl: "https://images.unsplash.com/photo-1574071318508-1cdbab80d002?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Pesto Gnocchi", description: "Potato dumplings with basil pesto", price: 15.99, imageUrl: "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Risotto Funghi", description: "Creamy rice with wild mushrooms", price: 17.99, imageUrl: "https://images.unsplash.com/photo-1621996346565-e3dbc646d9a9?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Tiramisu", description: "Classic Italian dessert with coffee", price: 6.99, imageUrl: "https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Garlic Bread", description: "Toasted, buttery, garlicky", price: 4.99, imageUrl: "https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=800&auto=format&fit=crop" },
+      { name: "Iced Tea", description: "Fresh brewed", price: 2.49, imageUrl: "https://images.unsplash.com/photo-1532634896-26909d0d4b6a?q=80&w=800&auto=format&fit=crop" }
+    ]
+  },
+  {
+    name: "Royal Sushi",
+    cuisine: "Japanese",
+    imageUrl: "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1600&auto=format&fit=crop",
+    address: "789 Maple Rd, Durham, NC 27603",
+    rating: 4.8,
+    deliveryFee: 4.49,
+    menuItems: [
+      { name: "California Roll", description: "Crab, avocado, and cucumber", price: 8.99, imageUrl: "https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Salmon Nigiri", description: "Fresh salmon over seasoned rice", price: 12.99, imageUrl: "https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Miso Soup", description: "Traditional soybean soup", price: 3.99, imageUrl: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Ramen Tonkotsu", description: "Rich pork bone broth ramen", price: 14.99, imageUrl: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Tempura Udon", description: "Wheat noodles with tempura", price: 13.99, imageUrl: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Chicken Katsu", description: "Breaded and fried chicken cutlet", price: 12.49, imageUrl: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Spicy Tuna Roll", description: "Tuna with spicy mayo", price: 9.99, imageUrl: "https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Sashimi Platter", description: "Assorted fresh raw fish", price: 18.99, imageUrl: "https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Gyoza", description: "Pan-fried pork dumplings", price: 7.99, imageUrl: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Yakitori", description: "Grilled chicken skewers", price: 10.99, imageUrl: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?q=80&w=1200&auto=format&fit=crop" },
+      { name: "House Salad", description: "Greens, tomatoes, vinaigrette", price: 5.99, imageUrl: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?q=80&w=800&auto=format&fit=crop" },
+      { name: "Water Bottle", description: "Still water 500ml", price: 1.49, imageUrl: "https://images.unsplash.com/photo-1616118132534-381148898bb4?q=80&w=2564&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D" }
+    ]
+  },
+  {
+    name: "Crave Kitchen",
+    cuisine: "Mexican",
+    imageUrl: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=1600&auto=format&fit=crop",
+    address: "321 Cedar Ln, Morrisville, NC 27604",
+    rating: 4.6,
+    deliveryFee: 2.49,
+    menuItems: [
+      { name: "Tacos al Pastor", description: "Marinated pork with pineapple", price: 11.99, imageUrl: "https://images.unsplash.com/photo-1565299585323-38174c1a3e0e?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Chicken Quesadilla", description: "Grilled tortilla with cheese and chicken", price: 10.99, imageUrl: "https://images.unsplash.com/photo-1618040996337-56904b7850b9?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Guacamole", description: "Fresh avocado dip with chips", price: 7.99, imageUrl: "https://images.unsplash.com/photo-1588168333984-ffbc16b89c55?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Nachos Supreme", description: "Loaded nachos with all toppings", price: 12.99, imageUrl: "https://images.unsplash.com/photo-1513456852971-30c0b8199d4d?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Burrito Bowl", description: "Rice, beans, meat, and veggies", price: 11.49, imageUrl: "https://images.unsplash.com/photo-1626700051175-6818013e1d4f?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Carnitas Tacos", description: "Slow-cooked pork tacos", price: 12.99, imageUrl: "https://images.unsplash.com/photo-1565299585323-38174c1a3e0e?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Churros", description: "Fried dough with cinnamon sugar", price: 5.99, imageUrl: "https://images.unsplash.com/photo-1581873372796-635b67ca2008?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Elote", description: "Mexican street corn", price: 6.99, imageUrl: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Fajitas", description: "Sizzling peppers, onions, and meat", price: 15.99, imageUrl: "https://images.unsplash.com/photo-1565299585323-38174c1a3e0e?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Salsa Verde Enchiladas", description: "Chicken enchiladas with green sauce", price: 13.99, imageUrl: "https://images.unsplash.com/photo-1618040996337-56904b7850b9?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Fries", description: "Crispy golden fries", price: 3.99, imageUrl: "https://images.unsplash.com/photo-1541599540903-216a46ca1dc0?q=80&w=800&auto=format&fit=crop" },
+      { name: "Coke", description: "Chilled soft drink", price: 2.49, imageUrl: "https://images.unsplash.com/photo-1541976076758-347942db1974?q=80&w=800&auto=format&fit=crop" }
+    ]
+  },
+  {
+    name: "Epic Table",
+    cuisine: "American",
+    imageUrl: "https://images.unsplash.com/photo-1553621042-f6e147245754?q=80&w=1600&auto=format&fit=crop",
+    address: "654 Pine St, Apex, NC 27605",
+    rating: 4.4,
+    deliveryFee: 3.99,
+    menuItems: [
+      { name: "Cheeseburger", description: "Classic beef patty with cheese", price: 11.99, imageUrl: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?q=80&w=1200&auto=format&fit=crop" },
+      { name: "BBQ Ribs", description: "Slow-smoked ribs with BBQ sauce", price: 18.99, imageUrl: "https://images.unsplash.com/photo-1544025162-d76694265947?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Fried Chicken", description: "Crispy buttermilk fried chicken", price: 13.99, imageUrl: "https://images.unsplash.com/photo-1626087921236-3b3466b5a77b?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Mac & Cheese", description: "Creamy macaroni and cheese", price: 8.99, imageUrl: "https://images.unsplash.com/photo-1543339494-b4cd4f7ba686?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Caesar Salad", description: "Romaine with caesar dressing", price: 9.99, imageUrl: "https://images.unsplash.com/photo-1546793665-c74683f339c1?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Buffalo Wings", description: "Spicy chicken wings with blue cheese", price: 12.99, imageUrl: "https://images.unsplash.com/photo-1527477396000-e27163b481c2?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Club Sandwich", description: "Triple-decker with turkey and bacon", price: 10.99, imageUrl: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Onion Rings", description: "Crispy battered onion rings", price: 6.99, imageUrl: "https://images.unsplash.com/photo-1603133872878-684f208fb84b?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Apple Pie", description: "Homemade apple pie with vanilla ice cream", price: 6.99, imageUrl: "https://images.unsplash.com/photo-1621303837174-89787a7d4729?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Chocolate Shake", description: "Rich chocolate milkshake", price: 5.99, imageUrl: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?q=80&w=1200&auto=format&fit=crop" },
+      { name: "Garlic Bread", description: "Toasted, buttery, garlicky", price: 4.99, imageUrl: "https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=800&auto=format&fit=crop" },
+      { name: "Iced Tea", description: "Fresh brewed", price: 2.49, imageUrl: "https://images.unsplash.com/photo-1532634896-26909d0d4b6a?q=80&w=800&auto=format&fit=crop" }
+    ]
+  }
 ];
 
 function makeRestaurantName(){ return `${pick(nameAdjs)} ${pick(nameNouns)}`; }
@@ -147,13 +233,6 @@ async function writeCredentialsCSV(rows){
   console.log(`📄 Credentials CSV: ${outPath}`);
 }
 
-// determine password fields from schema
-function getPasswordField(){
-  if (Restaurant.schema.path("password")) return { type: "plain", field: "password" };
-  if (Restaurant.schema.path("passwordHash")) return { type: "hash", field: "passwordHash" };
-  if (Restaurant.schema.path("hashedPassword")) return { type: "hash", field: "hashedPassword" };
-  return null;
-}
 
 async function main(){
   await mongoose.connect(MONGODB_URI);
@@ -165,6 +244,8 @@ async function main(){
   if (CLEAR_USERS) {
     console.log("🧹 CLEAR_USERS=true → also clearing users…");
     await User.deleteMany({});
+    await CustomerAuth.deleteMany({});
+    await UserPerformance.deleteMany({});
   } else {
     console.log("🔒 Users left intact (set CLEAR_USERS=true to wipe).");
   }
@@ -174,66 +255,44 @@ async function main(){
     console.log("👤 Created demo user demo@example.com");
   }
 
-  const passField = getPasswordField();
-  if (!passField) {
-    console.warn("⚠️ Restaurant schema has no recognizable password field (password / passwordHash / hashedPassword).");
-    console.warn("   Credentials will still be listed, but login may not work unless your model stores them.");
-  }
+  console.log("🧹 Clearing customer auths and performance data…");
+  await CustomerAuth.deleteMany({});
+  await UserPerformance.deleteMany({});
+
+  console.log("🧹 Clearing restaurant admins…");
+  await RestaurantAdmin.deleteMany({});
 
   console.log(`🍽️  Creating ${NUM_RESTAURANTS} restaurants…`);
   const createdRestaurants = [];
-  const creds = [];
-  let coverIndex = 0;
 
-  for (let i = 0; i < NUM_RESTAURANTS; i++){
-    const cuisine = pick(cuisines);
-    const name = makeRestaurantName();
-    const cover = RESTAURANT_UNIQUE_IMAGES[coverIndex % RESTAURANT_UNIQUE_IMAGES.length];
-    coverIndex++;
+  for (let i = 0; i < PREDEFINED_RESTAURANTS.length; i++){
+    const restaurantData = PREDEFINED_RESTAURANTS[i];
 
     const r = await Restaurant.create({
-      name,
-      cuisine,
-      imageUrl: cover,                 // unique cover per restaurant
-      rating: Number((4.2 + rnd()*0.8).toFixed(1)),
-      deliveryFee: Number(price(0.0, 4.49, 0.5).toFixed(2)),
-      // etaMins removed by request
-      address: randomAddress()
+      name: restaurantData.name,
+      cuisine: restaurantData.cuisine,
+      imageUrl: restaurantData.imageUrl,
+      rating: restaurantData.rating,
+      deliveryFee: restaurantData.deliveryFee,
+      address: restaurantData.address
     });
 
-    // ---- Credentials assignment ----
-    const slug = slugify(name);
+    // ---- Create RestaurantAdmin ----
+    const slug = slugify(restaurantData.name);
     const email = `demo+${String(i+1).padStart(2,"0")}-${slug}@bitecode.dev`;
     const passwordPlain = "Bitecode@123";
+    const passwordHash = await bcrypt.hash(passwordPlain, 10);
 
-    r.email = email;
+    await RestaurantAdmin.create({
+      email: email.toLowerCase().trim(),
+      passwordHash,
+      restaurantId: r._id
+    });
 
-    if (passField?.type === "plain") {
-      r[passField.field] = passwordPlain; // expect pre-save hook to hash
-      await r.save();
-    } else if (passField?.type === "hash") {
-      const bcrypt = (await import("bcrypt")).default;
-      r[passField.field] = await bcrypt.hash(passwordPlain, 10);
-      await r.save();
-    } else {
-      // set anyway; may be ignored if schema is strict
-      r.password = passwordPlain;
-      await r.save().catch(()=>{ /* ignore if schema rejects */ });
-    }
-
-    creds.push({ index: i+1, name, email, password: passwordPlain });
     createdRestaurants.push(r);
 
-    // ---- Menu items (11 unique + 4 shared) ----
-    const uniques = [];
-    while (uniques.length < UNIQUE_PER_RESTAURANT) {
-      const it = cuisineItem(cuisine);
-      if (!uniques.some(u => u.name === it.name)) uniques.push(it);
-    }
-    const shared = shuffle(sharedMenuPool.slice()).slice(0, SHARED_PER_RESTAURANT).map(sharedItemVariant);
-    const menu = uniqBy([...uniques, ...shared], x => x.name).slice(0, ITEMS_PER_RESTAURANT);
-
-    await MenuItem.insertMany(menu.map(m => ({
+    // ---- Menu items from predefined data ----
+    await MenuItem.insertMany(restaurantData.menuItems.map(m => ({
       restaurantId: r._id,
       name: m.name,
       description: m.description,
@@ -242,16 +301,95 @@ async function main(){
       isAvailable: true
     })));
 
-    process.stdout.write(`  • ${name} (${cuisine}) — ${menu.length} items\n`);
+    process.stdout.write(`  • ${restaurantData.name} (${restaurantData.cuisine}) — ${restaurantData.menuItems.length} items\n`);
   }
+
+  // Query actual RestaurantAdmin records from database
+  const actualAdmins = await RestaurantAdmin.find({})
+    .populate('restaurantId', 'name')
+    .sort({ email: 1 })
+    .lean();
+
+  const actualCreds = actualAdmins.map((admin, idx) => ({
+    index: idx + 1,
+    name: admin.restaurantId.name,
+    email: admin.email,
+    password: "Bitecode@123"
+  }));
 
   // Output credentials
   console.log("\n🔐 Restaurant demo credentials:");
-  creds.forEach(c => console.log(` ${String(c.index).padStart(2," ")}. ${c.name} → ${c.email}  /  ${c.password}`));
-  await writeCredentialsCSV(creds);
+  actualCreds.forEach(c => console.log(` ${String(c.index).padStart(2," ")}. ${c.name} → ${c.email}  /  ${c.password}`));
+  await writeCredentialsCSV(actualCreds);
+
+  // Create demo users (experienced and inexperienced)
+  console.log("\n👤 Creating demo users…");
+  const demoUsers = [
+    {
+      name: "Experienced User",
+      email: "experienced@demo.com",
+      password: "Demo@123",
+      address: "100 Main St, Raleigh, NC 27601",
+      performance: {
+        totalOrders: 45,
+        totalChallenges: 30,
+        completedChallenges: 28,
+        averageSolveTime: 120, // 2 minutes
+        lastDifficulty: "hard"
+      }
+    },
+    {
+      name: "Inexperienced User",
+      email: "inexperienced@demo.com",
+      password: "Demo@123",
+      address: "200 Oak Ave, Cary, NC 27602",
+      performance: {
+        totalOrders: 3,
+        totalChallenges: 5,
+        completedChallenges: 2,
+        averageSolveTime: 300, // 5 minutes
+        lastDifficulty: "easy"
+      }
+    }
+  ];
+
+  const createdUsers = [];
+  for (const userData of demoUsers) {
+    const passwordHash = await bcrypt.hash(userData.password, 10);
+    const customer = await CustomerAuth.create({
+      name: userData.name,
+      email: userData.email,
+      passwordHash,
+      address: userData.address
+    });
+
+    await UserPerformance.create({
+      userId: customer._id,
+      totalOrders: userData.performance.totalOrders,
+      totalChallenges: userData.performance.totalChallenges,
+      completedChallenges: userData.performance.completedChallenges,
+      averageSolveTime: userData.performance.averageSolveTime,
+      lastDifficulty: userData.performance.lastDifficulty
+    });
+
+    createdUsers.push({
+      name: userData.name,
+      email: userData.email,
+      password: userData.password
+    });
+
+    process.stdout.write(`  • ${userData.name} → ${userData.email}\n`);
+  }
+
+  // Output user credentials
+  console.log("\n🔐 User demo credentials:");
+  createdUsers.forEach((u, idx) => {
+    const experience = u.email.includes("experienced") ? "Experienced" : "Inexperienced";
+    console.log(` ${String(idx + 1).padStart(2," ")}. ${u.name} (${experience}) → ${u.email}  /  ${u.password}`);
+  });
 
   const totalItems = await MenuItem.countDocuments();
-  console.log(`\n🌱 Seed complete: ${createdRestaurants.length} restaurants, ${totalItems} menu items.`);
+  console.log(`\n🌱 Seed complete: ${createdRestaurants.length} restaurants, ${totalItems} menu items, ${createdUsers.length} demo users.`);
   await mongoose.disconnect();
   console.log("🔌 Disconnected.");
 }
