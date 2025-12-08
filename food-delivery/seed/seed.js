@@ -11,6 +11,8 @@ import User from "../models/User.js";
 import RestaurantAdmin from "../models/RestaurantAdmin.js";
 import CustomerAuth from "../models/CustomerAuth.js";
 import UserPerformance from "../models/UserPerformance.js";
+import Order from "../models/Order.js";
+import ChallengeSession from "../models/ChallengeSession.js";
 import bcrypt from "bcrypt";
 
 dotenv.config();
@@ -246,6 +248,8 @@ async function main(){
     await User.deleteMany({});
     await CustomerAuth.deleteMany({});
     await UserPerformance.deleteMany({});
+    await Order.deleteMany({});
+    await ChallengeSession.deleteMany({});
   } else {
     console.log("🔒 Users left intact (set CLEAR_USERS=true to wipe).");
   }
@@ -255,9 +259,11 @@ async function main(){
     console.log("👤 Created demo user demo@example.com");
   }
 
-  console.log("🧹 Clearing customer auths and performance data…");
+  console.log("🧹 Clearing customer auths, performance data, orders, and challenge sessions…");
   await CustomerAuth.deleteMany({});
   await UserPerformance.deleteMany({});
+  await Order.deleteMany({});
+  await ChallengeSession.deleteMany({});
 
   console.log("🧹 Clearing restaurant admins…");
   await RestaurantAdmin.deleteMany({});
@@ -353,6 +359,14 @@ async function main(){
     }
   ];
 
+  // Get first restaurant and menu items for creating orders
+  const firstRestaurant = createdRestaurants[0];
+  const menuItems = await MenuItem.find({ restaurantId: firstRestaurant._id }).limit(3);
+  
+  if (menuItems.length === 0) {
+    console.log("⚠️  Warning: No menu items found. Cannot create orders for demo users.");
+  }
+
   const createdUsers = [];
   for (const userData of demoUsers) {
     const passwordHash = await bcrypt.hash(userData.password, 10);
@@ -363,6 +377,82 @@ async function main(){
       address: userData.address
     });
 
+    // Create orders for the user
+    const orders = [];
+    const numOrders = userData.performance.totalOrders;
+    const baseTime = Date.now() - (90 * 24 * 60 * 60 * 1000); // 90 days ago
+    
+    for (let i = 0; i < numOrders; i++) {
+      const orderTime = new Date(baseTime + (i * 2 * 24 * 60 * 60 * 1000)); // 2 days apart
+      const orderItems = menuItems.length > 0 ? menuItems.map(item => ({
+        menuItemId: item._id,
+        name: item.name,
+        price: item.price,
+        quantity: 1 + Math.floor(Math.random() * 3) // 1-3 items
+      })) : [];
+      
+      const subtotal = orderItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const deliveryFee = firstRestaurant.deliveryFee || 2.99;
+      const total = subtotal + deliveryFee;
+
+      const order = await Order.create({
+        userId: customer._id,
+        restaurantId: firstRestaurant._id,
+        items: orderItems,
+        subtotal,
+        deliveryFee,
+        total,
+        status: 'delivered',
+        paymentStatus: 'paid',
+        deliveredAt: orderTime,
+        createdAt: orderTime,
+        updatedAt: orderTime
+      });
+      
+      orders.push(order);
+    }
+
+    // Create challenge sessions for the user
+    const numChallenges = userData.performance.totalChallenges;
+    const numCompleted = userData.performance.completedChallenges;
+    const avgSolveTime = userData.performance.averageSolveTime; // in seconds
+    const challenges = [];
+    
+    for (let i = 0; i < numChallenges; i++) {
+      // Use orders for challenge sessions (with modulo to cycle through orders)
+      const orderIndex = i % Math.min(orders.length, numChallenges);
+      const order = orders[orderIndex];
+      
+      const challengeTime = new Date(order.createdAt.getTime() + (60 * 60 * 1000)); // 1 hour after order
+      const isCompleted = i < numCompleted;
+      const solveTime = isCompleted ? avgSolveTime * 1000 : 0; // convert to milliseconds
+      const expiresAt = new Date(challengeTime.getTime() + (2 * 60 * 60 * 1000)); // 2 hours from challenge start
+      
+      // Determine difficulty based on user performance
+      // Experienced user should have mostly hard, inexperienced should have easy
+      let difficulty = "easy";
+      if (userData.email.includes("experienced")) {
+        // Experienced user: mix of medium and hard, mostly hard
+        difficulty = i < numChallenges * 0.2 ? "medium" : "hard";
+      } else {
+        // Inexperienced user: mostly easy
+        difficulty = i < numChallenges * 0.8 ? "easy" : "medium";
+      }
+
+      const challenge = await ChallengeSession.create({
+        userId: customer._id,
+        orderId: order._id,
+        difficulty,
+        status: isCompleted ? "WON" : "EXPIRED",
+        expiresAt,
+        createdAt: challengeTime,
+        updatedAt: isCompleted ? new Date(challengeTime.getTime() + solveTime) : expiresAt
+      });
+      
+      challenges.push(challenge);
+    }
+
+    // Create user performance record (will be recalculated by difficultyCalculator, but set initial values)
     await UserPerformance.create({
       userId: customer._id,
       totalOrders: userData.performance.totalOrders,
@@ -375,10 +465,12 @@ async function main(){
     createdUsers.push({
       name: userData.name,
       email: userData.email,
-      password: userData.password
+      password: userData.password,
+      orders: orders.length,
+      challenges: challenges.length
     });
 
-    process.stdout.write(`  • ${userData.name} → ${userData.email}\n`);
+    process.stdout.write(`  • ${userData.name} → ${userData.email} (${orders.length} orders, ${challenges.length} challenges)\n`);
   }
 
   // Output user credentials

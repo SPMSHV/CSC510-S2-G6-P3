@@ -15,6 +15,7 @@
     "cleanup:chess": "node seed/cleanup_chess_puzzles.js",
     "list:chess": "node seed/list_chess_puzzles.js",
     "validate:chess": "node seed/validate_chess_puzzles.js",
+    "list:restaurants": "node seed/list_restaurant_credentials.js",
     "test": "cross-env NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --config jest.config.mjs",
     "test:cov": "cross-env NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --config jest.config.mjs --coverage",
     "test:e2e": "playwright test",
