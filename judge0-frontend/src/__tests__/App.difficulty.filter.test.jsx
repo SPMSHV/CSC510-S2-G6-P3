@@ -1,47 +1,27 @@
 import { render, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import App from '../App';
 
-function getDifficultySelect() {
-  // There are 2 selects (difficulty & language). Pick the one with the sentinel option.
-  const selects = screen.getAllByRole('combobox');
-  const difficultySelect = selects.find(sel =>
-    Array.from(sel.querySelectorAll('option')).some(o =>
-      /Select Difficulty/i.test(o.textContent || '')
-    )
-  );
-  return difficultySelect;
-}
+// Note: The difficulty is now determined by the session, not a user-selectable dropdown.
+// The banner displays the difficulty from the selected problem (defaulting to easy in tests).
 
-async function expectBannerForDifficulty(diffLabel) {
-  // Change difficulty
-  await userEvent.selectOptions(getDifficultySelect(), diffLabel);
-
-  // Scope assertions to the Cashback banner
-  const heading = await screen.findByText(/Mystery Cashback Challenge/i);
-  const banner = heading.closest('div') || heading.parentElement;
-
-  // 1) shows the selected difficulty word in the banner (e.g., HARD / MEDIUM / EASY)
-  expect(
-    within(banner).getByText(new RegExp(diffLabel, 'i'))
-  ).toBeInTheDocument();
-
-  // 2) shows a percent value like "20%"
-  expect(within(banner).getByText(/\d+%/)).toBeInTheDocument();
-}
-
-test('cashback banner reflects selected difficulty and shows a dollar amount', async () => {
+test('cashback banner reflects difficulty and shows a cashback percentage', async () => {
   render(<App />);
 
   // Default state should show the banner
   expect(screen.getByText(/Mystery Cashback Challenge/i)).toBeInTheDocument();
 
-  // Verify for each difficulty (case-insensitive match)
-  await expectBannerForDifficulty('easy');
-  await expectBannerForDifficulty('medium');
-  await expectBannerForDifficulty('hard');
+  // Scope assertions to the Cashback banner
+  const heading = screen.getByText(/Mystery Cashback Challenge/i);
+  const banner = heading.closest('div') || heading.parentElement;
 
-  // Also ensure the select really changed each time
-  const select = getDifficultySelect();
-  expect(select).toHaveValue('hard'); // last selection persists
+  // 1) Banner should show the difficulty (default is EASY in test mode)
+  expect(
+    within(banner).getByText(/easy/i)
+  ).toBeInTheDocument();
+
+  // 2) Banner shows a percent value like "5%" (easy gives 5% cashback)
+  expect(within(banner).getByText(/\d+%/)).toBeInTheDocument();
+
+  // 3) Challenge Difficulty badge should be visible
+  expect(screen.getByText(/Challenge Difficulty:/i)).toBeInTheDocument();
 });

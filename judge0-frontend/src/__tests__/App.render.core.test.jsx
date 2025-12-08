@@ -9,13 +9,12 @@ test('renders header, difficulty select, editor, output, and run buttons', () =>
      screen.getByAltText(/BiteCode logo/i)
   ).toBeInTheDocument();
 
-  // Difficulty select: first combobox in the left panel (there may be another for language)
+  // Difficulty badge: the UI now shows a static "Challenge Difficulty:" label instead of a dropdown
+  expect(screen.getByText(/Challenge Difficulty:/i)).toBeInTheDocument();
+  
+  // Language select should be present (only combobox now)
   const comboBoxes = screen.getAllByRole('combobox');
   expect(comboBoxes.length).toBeGreaterThan(0);
-  const difficultySelect = comboBoxes[0];
-  expect(difficultySelect).toBeInTheDocument();
-  // Default option should be present
-  expect(screen.getByText(/Select Difficulty/i)).toBeInTheDocument();
 
   // Problem card essentials
   expect(screen.getByText(/Sum of Two Numbers/i)).toBeInTheDocument();
